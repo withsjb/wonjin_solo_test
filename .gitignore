@@ -1,0 +1,10 @@
+./target/
+./src/main/resources/app.properties
+*.numbers
+*.xlsx
+features_log/
+target/
+.DS_Store
+.idea
+*.iml
+.vscode
