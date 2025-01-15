@@ -563,8 +563,8 @@ def init(def map) {
     map.git.url = "https://github.com/withsjb/wonjin_solo_test.git"
 
     map.jira = [:]
-    // ! Jira Steps Plugin을 위해 Configure System에서 설정한 값
-    map.jira.site_name = "withsjb1.atlassian.net"
+    // !jenkins Jira Steps Plugin을 위해 Configure System에서 설정한 값
+    map.jira.site_name = "JIRA_CLOUD_JINBIN"
     map.jira.base_url = "https://withsjb1.atlassian.net"
     map.jira.project_key = "WON"
     map.jira.defect_issuetype = "Defect"
