@@ -564,7 +564,7 @@ def init(def map) {
 
     map.jira = [:]
     // ! Jira Steps Plugin을 위해 Configure System에서 설정한 값
-    map.jira.site_name = "TBELL_PROJECT"
+    map.jira.site_name = "withsjb1.atlassian.net"
     map.jira.base_url = "https://withsjb1.atlassian.net"
     map.jira.project_key = "WON"
     map.jira.defect_issuetype = "Defect"
