@@ -91,7 +91,7 @@ Feature: [웅진 Weekly] 북클럽
 
  # ==================== 투데이 ====================
 
-  Scenario Outline: [투데이 - AI맞춤] 화면구성 확인 (BookClub_007)
+Scenario Outline: [투데이 - AI맞춤] 화면구성 확인 (BookClub_007)
     Given 투데이 버튼 클릭
     When 투데이 - "AI맞춤 투데이" 서브메뉴 클릭
     Then AI맞춤 "<title>" 확인

@@ -14,7 +14,7 @@ pipeline {
     }
     environment {
         // ! Jenkins Web에서 설정한 값
-        JIRA_CLOUD_CREDENTIALS = credentials('WJ_JIRA_CLOULD_YN')
+        JIRA_CLOUD_CREDENTIALS = credentials('jira-api-token')
         // ! Jira trigger를 통해 자동으로 받는 값
         JIRA_ISSUE_KEY = "${JIRA_TEST_PLAN_KEY}"
 
@@ -553,21 +553,21 @@ def init(def map) {
     map.testcases = [:]
     map.current_path = null
     map.agents_ref = [
-        "SM-T583": "C:\\Users\\19002492\\jenkins-wjthinkbig\\T583\\workspace",
-        "SM-T500": "C:\\Users\\19002492\\jenkins-wjthinkbig\\T500\\workspace"
+        "SM-T583": "/Users/sonjinbin/jenkins/T500/workspace",
+        "SM-T500": "/Users/sonjinbin/jenkins/T583/workspace"
     ]
 
 
     map.git = [:]
     map.git.branch = "master"
-    map.git.url = "git://22.4.20.13/TBELL_PROJECT.git"
+    map.git.url = "https://github.com/withsjb/wonjin_solo_test.git"
 
     map.jira = [:]
     // ! Jira Steps Plugin을 위해 Configure System에서 설정한 값
     map.jira.site_name = "TBELL_PROJECT"
-    map.jira.base_url = "https://wjthinkbig.atlassian.net"
-    map.jira.project_key = "HSWN"
-    map.jira.defect_issuetype = "Bug"
+    map.jira.base_url = "https://withsjb1.atlassian.net"
+    map.jira.project_key = "WON"
+    map.jira.defect_issuetype = "Defect"
     // ! scenario field on tests issue
     map.jira.scenario_field = "customfield_10086"
     // ! transition id for test start -> test fail
