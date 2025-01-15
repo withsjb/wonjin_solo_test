@@ -401,13 +401,13 @@ pipeline {
                                 }
                             }
                             
-                            if (isPassed) {
-                                // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
-                            } else {
-                                // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-                            }
+                            // if (isPassed) {
+                            //     // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
+                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
+                            // } else {
+                            //     // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
+                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
+                            // }
                         } catch (error) {
                             throwableException(map, error)
                         }
@@ -569,7 +569,7 @@ def init(def map) {
     map.jira.project_key = "WON"
     map.jira.defect_issuetype = "Defect"
     // ! scenario field on tests issue
-    map.jira.scenario_field = "customfield_10086"
+    map.jira.scenario_field = "customfield_10058"
     // ! transition id for test start -> test fail
     map.jira.fail_transition = "21"
     // ! transition id for test start -> finish 
@@ -579,16 +579,16 @@ def init(def map) {
     // ! bug - test link name 
     map.jira.tests_link = "Tests"
     // ! Job Run No. field
-    map.jira.job_link = "customfield_10091"
+    map.jira.job_link = "customfield_10062"
     // ! Test Result Link field
-    map.jira.test_result_link = "customfield_10092"
+    map.jira.test_result_link = "customfield_10063"
     
 
     map.const = [:]
     // ! Test plan/Run의 'Test 대상' field 
-    map.const.plan_tests = "customfield_10088"
+    map.const.plan_tests = "customfield_10059"
     // ! Test Plan/Run의 'Tablet Info' field (Multi Select field -> array)
-    map.const.test_env = "customfield_10095"
+    map.const.test_env = "customfield_10061"
     map.const.test_plan_issuetype = "Test Plan/Run"
 
     map.cucumber = [:]
