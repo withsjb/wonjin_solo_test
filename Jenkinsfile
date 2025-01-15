@@ -553,8 +553,8 @@ def init(def map) {
     map.testcases = [:]
     map.current_path = null
     map.agents_ref = [
-        "SM-T583": "/Users/sonjinbin/jenkins/T500/workspace",
-        "SM-T500": "/Users/sonjinbin/jenkins/T583/workspace"
+        "SM-T583": "/Users/sonjinbin/jenkins/T583/workspace",
+        "SM-T500": "/Users/sonjinbin/jenkins/T500/workspace"
     ]
 
 
