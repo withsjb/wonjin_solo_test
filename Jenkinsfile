@@ -135,7 +135,6 @@ pipeline {
             // ! agent는 지정한 slave node의 label
             agent {
                 label "${map.current_node}"
-                echo "map.current_node: ${map.current_node}"
             }
             steps {
                 echo "스탭 진입"
