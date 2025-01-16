@@ -449,7 +449,7 @@ pipeline {
     -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
     -X POST \
     -H 'X-Atlassian-Token: no-check' \
-    -F 'file=@\"${map.current_path}/defect_screenshots/${value}.png\";filename=errorscreenshot.png' \
+    -F 'file=@${map.current_path}/defect_screenshots/${value}.png;filename=errorscreenshot.png' \
     '${map.jira.base_url}/rest/api/3/issue/${key}/attachments'
 """
 
