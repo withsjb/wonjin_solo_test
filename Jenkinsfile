@@ -171,12 +171,12 @@ pipeline {
                             def addedDescription = null
                             if (value.contains("\r\n")) {
                                 addedDescription = value.replaceFirst("\r\n", ("\r\n" + key + "\n\n"))
-                                 println "addedDescription ---> : " + addedDescription
+                                 println "addedDescription1 ---> : " + addedDescription
                                 feature += addedDescription
                                 feature += "\n\n"
                             } else {
                                 addedDescription = value.replaceFirst("\n", ("\n" + key + "\n\n"))
-                                println "addedDescription ---> : " + addedDescription
+                                println "addedDescription2 ---> : " + addedDescription
                                 feature += addedDescription
                                 feature += "\n\n"
                             }
