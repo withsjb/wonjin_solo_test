@@ -135,8 +135,10 @@ pipeline {
             // ! agent는 지정한 slave node의 label
             agent {
                 label "${map.current_node}"
+                println "map.current_node" + map.current_node
             }
             steps {
+                println "스탭 진입"
                 // ! dir로 특정 path를 지정하면 지정한 slave의 지정한 path에서 작업을 한다는 의미
                 dir("${map.current_path}") {
                     script {
