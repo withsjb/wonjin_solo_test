@@ -186,7 +186,11 @@ pipeline {
                     
                         // ! slave의 directory에서 auto.feature라는 파일을 만들고 그 파일에 jira에서 가져온 모든 시나리오를 집어넣음
                         println "${map.current_path}/a_features/auto.feature"
+                        try{
                         writeFile(file: "${map.current_path}/a_features/auto.feature", text: feature, encoding: 'UTF-8')
+                        }catch(Exception e){
+                            e.getMessage();
+                        }
                     }
                 }
             }
