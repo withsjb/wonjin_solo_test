@@ -440,18 +440,18 @@ pipeline {
                             // ! cURL로 각 defect issue에 맞는 defect screenshot을 업로드한다.
                             map.cucumber.defect_info.each { key, value ->
                             sh "echo 'Current directory: ${map.current_path}'"
-                        sh "echo 'Defect screenshot file path: ./defect_screenshots/${value}.png'"
+                        sh "echo 'Defect screenshot file path: ${map.current_path}/defect_screenshots/${value}.png'"
 
                         // 파일 존재 여부 확인
-                        sh "ls -l ./defect_screenshots/${value}.png"
+                        sh "ls -l ${map.current_path}/defect_screenshots/${value}.png"
                             sh """
                                 curl --insecure -D- \
                                 -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
                                 -X POST \
                                 -H 'X-Atlassian-Token: no-check' \
-                                -F 'file=@./defect_screenshots/${value}.png;filename=errorscreenshot.png' \
-                                '${map.jira.base_url}/rest/api/3/issue/${key}/attachments'
-                            """
+                                -F 'file=@${map.current_path}/defect_screenshots/${value}.png;filename=errorscreenshot.png' \
+    '${map.jira.base_url}/rest/api/3/issue/${key}/attachments'
+"""
                                 // sh script: "curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@${map.cucumber.defect_screenshot_path}/${value}.png' ${map.jira.base_url}/rest/api/3/issue/${key}/attachments", returnStdout: false
                             }
                         }
