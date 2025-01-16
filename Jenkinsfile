@@ -649,6 +649,10 @@ def createBugPayload (String projectKey, String summary, String description, Str
                     ]
                 ]
             ],
+            "assignee": [
+                // ! jira 로그인별 ID 값 변경 필요
+                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
+            ],
             "issuetype": ["name": "${issuetype}"],
             "priority": ["name": "Major"]
         ]
