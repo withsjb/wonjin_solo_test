@@ -439,6 +439,11 @@ pipeline {
                         if (map.cucumber.defect_info.size() > 0) {
                             // ! cURL로 각 defect issue에 맞는 defect screenshot을 업로드한다.
                             map.cucumber.defect_info.each { key, value ->
+                            sh "echo 'Current directory: ${map.current_path}'"
+                        sh "echo 'Defect screenshot file path: ./defect_screenshots/${value}.png'"
+
+                        // 파일 존재 여부 확인
+                        sh "ls -l ./defect_screenshots/${value}.png"
                             sh """
                                 curl --insecure -D- \
                                 -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
