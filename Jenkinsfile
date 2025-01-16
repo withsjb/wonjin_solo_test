@@ -671,7 +671,9 @@ def createIssue(String baseUrl, String auth, String payload) {
     def responseCode = conn.getResponseCode()
     println "createIssue response --> : ${responseCode}"
     if (responseCode != 200 && responseCode != 201 && responseCode != 204) {
-        throw new RuntimeException("Error - httpCode : ${responseCode}")
+        def errorResponse = conn.getErrorStream().getText()  // 오류 응답 본문을 읽기
+        println "에러 Error response body: ${errorResponse}"  // 응답 본문 출력
+        throw new RuntimeException("에러2 Error - httpCode : ${responseCode}, Response body: ${errorResponse}")
     }
 
     def response = conn.getInputStream().getText()
