@@ -654,7 +654,7 @@ def createBugPayload (String projectKey, String summary, String description, Str
                 "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
             ],
             "issuetype": ["name": "${issuetype}"],
-            "priority": { "name": "Major" }
+            "priority": ["name": "Medium"]
         ]
     ]
     return JsonOutput.toJson(payload)
