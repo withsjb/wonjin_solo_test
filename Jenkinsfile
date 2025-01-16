@@ -533,7 +533,9 @@ pipeline {
                     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
 
                     // ! try catch로 감싼 이유는 이미 status가 fail일 수 있기 때문에 이미 fail인 상태면 처리
-                } catch (RuntimeException) {}
+                } catch (RuntimeException) {
+                    println "젠장 오류가 났잖아"
+                }
             }
         }
     }
