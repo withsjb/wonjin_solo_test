@@ -143,7 +143,7 @@ pipeline {
                     script {
                         println "✅✅✅✅ Download testcases on slave ✅✅✅✅"
                         println "testcases count --> : ${map.testcases.size()}"
-                        println "map.current_path --> : ${map.current_path}"
+                        println "map.current_path --> : ${map.current_path}\\src\\main\\resources\\app.properties"
                         if (!fileExists("${map.current_path}\\src\\main\\resources\\app.properties")) {
                             println "no app.properites"
                             map.skipByAppProperties = true
