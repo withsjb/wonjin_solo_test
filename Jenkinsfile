@@ -440,7 +440,8 @@ pipeline {
                             // ! cURL로 각 defect issue에 맞는 defect screenshot을 업로드한다.
                             map.cucumber.defect_info.each { key, value ->
                             sh "echo 'Current directory: ${map.current_path}'"
-                        sh "echo 'Defect screenshot file path: ${map.current_path}/defect_screenshots/${value}.png'"
+                       sh "ls -l ${map.current_path}/defect_screenshots/${value.replace('(', '\\(').replace(')', '\\)')}.png"
+
 
                         // 파일 존재 여부 확인
                         sh "ls -l '${map.current_path}/defect_screenshots/${value}.png'"
