@@ -204,14 +204,30 @@ pipeline {
                 label "${map.current_node}"
             }
             steps {
-                dir("${map.current_path}/src/main/resources") {
+                 
                     script {
                         println "🔄🔄🔄 Rebooting the device before tests 🔄🔄🔄"
-
+                        
+                        def appPropertiesPath = "${env.current_path}/src/main/resources/app.properties"  
+                        echo "Using app.properties from: ${appPropertiesPath}"
                         // app.properties 파일 읽기
-                        def props = readProperties file: 'app.properties'
-                        def udid = props['udid']
-                        def deviceName = props['deviceName']
+                        def propsContent = readFile(appPropertiesPath)  
+                        def props = [:]
+
+                        propsContent.split('\n').each { line ->  
+                        if (line && !line.startsWith('#')) { // 주석 제거  
+                            def splitLine = line.split('=')  
+                            if (splitLine.size() == 2) {  
+                                props[splitLine[0].trim()] = splitLine[1].trim()  
+                            }  
+                        }  
+                    }
+
+                    // deviceName과 udid 가져오기  
+                    def deviceName = props['deviceName']  
+                    def udid = props['udid']
+
+                    echo "Device Name: ${deviceName}, UDID: ${udid}"
 
                         if (udid) {
                             println "Rebooting device with udid: ${udid}, device name: ${deviceName}"
@@ -234,7 +250,7 @@ pipeline {
                             error "❌ UDID not found in app.properties"
                         }
                     }
-                }
+                
             }
         }
 

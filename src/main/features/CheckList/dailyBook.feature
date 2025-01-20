@@ -12,7 +12,7 @@ Feature: [웅진 Daily] bookClub
     Then 북클럽 프렌즈 메뉴 확인
     Then 북클럽 나의 프렌즈 ON_OFF
     Then My 프로필 메인 구성 확인
-    And My 프로필 나가기
+    And My 프로필 나가기햣
 
 
   Scenario: 북클럽 상단 GNB 확인 (CheckBookClub_002)
