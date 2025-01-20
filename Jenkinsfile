@@ -443,7 +443,9 @@ pipeline {
                         sh "echo 'Defect screenshot file path: ${map.current_path}/defect_screenshots/${value}.png'"
 
                         // 파일 존재 여부 확인
-                        sh "ls -l ${map.current_path}/defect_screenshots/${value}.png"
+                        sh "ls -l '${map.current_path}/defect_screenshots/${value}.png'"
+ㄴ
+
                             sh """
     curl --insecure -D- \
     -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
