@@ -456,7 +456,10 @@ pipeline {
                             //     -F 'file=@${map.current_path}/defect_screenshots/${value}.png;filename=errorscreenshot.png' \
                             //     '${map.jira.base_url}/rest/api/3/issue/${key}/attachments'
                             //     """
-
+                                sh "echo 'jira.auth_user: ${map.jira.auth_user}'"
+                                sh "echo 'defect_screenshot_path: ${map.cucumber.defect_screenshot_path}/${value}.png'"
+                                sh "echo 'jira_api: ${map.jira.base_url}/rest/api/3/issue/${key}/attachments'"
+                                
                                 sh script: "curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@${map.cucumber.defect_screenshot_path}/${value}.png' ${map.jira.base_url}/rest/api/3/issue/${key}/attachments", returnStdout: false
                             }
                         }
