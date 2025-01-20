@@ -389,6 +389,7 @@ pipeline {
 
                                 if (!before.status.contains("passed")) {
                                     map.cucumber.error_message = before.error_message
+                                    println "11map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,

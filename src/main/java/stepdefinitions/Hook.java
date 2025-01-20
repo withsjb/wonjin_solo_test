@@ -2,9 +2,7 @@ package stepdefinitions;
 
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
-import io.cucumber.java.After;
-import io.cucumber.java.Before;
-import io.cucumber.java.Scenario;
+import io.cucumber.java.*;
 import io.cucumber.java.en.When;
 import org.apache.commons.codec.binary.Base64;
 import org.openqa.selenium.NoSuchElementException;
@@ -55,6 +53,35 @@ public class Hook {
         TimeUnit.SECONDS.sleep(10);
         toggleWifi("On");
         TimeUnit.SECONDS.sleep(5);
+        try{
+            AndroidManager.getElementById("com.wjthinkbig.mlauncher2:id/error_button").click();
+            log.info("일시적인 연결문제(error_btn 클릭)");
+        }catch (Exception a){
+            log.info("일시적인 문제 발생안함");
+        }
+    }
+
+    @BeforeStep
+    @AfterStep
+    public void beforeStep(Scenario scenario) {
+
+
+        try {
+            // refreshButton을 가져온다
+            WebElement refreshButton = AndroidManager.getElementById("com.wjthinkbig.mlauncher2:id/refreshButton");
+
+            // 버튼이 화면에 표시되는지 확인
+            if (refreshButton.isDisplayed()) {
+                // 버튼이 보이면 클릭
+                refreshButton.click();
+                log.info("스탭별 작동 버튼 클릭");
+            } else {
+                log.info("refreshButton이 보이지 않아 클릭하지 않음");
+            }
+        } catch (Exception e) {
+            // 예외 발생 시 처리 (예: 요소를 찾지 못하는 경우)
+
+        }
     }
 
     public void checkAndRestartAdbServer() {
