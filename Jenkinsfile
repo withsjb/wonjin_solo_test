@@ -199,6 +199,47 @@ pipeline {
             }
         }
 
+        stage("Reboot devices") {
+            agent {
+                label "${map.current_node}"
+            }
+            steps {
+                dir("${map.current_path}/src/main/resources") {
+                    script {
+                        println "🔄🔄🔄 Rebooting the device before tests 🔄🔄🔄"
+
+                        // app.properties 파일 읽기
+                        def props = readProperties file: 'app.properties'
+                        def udid = props['udid']
+                        def deviceName = props['deviceName']
+
+                        if (udid) {
+                            println "Rebooting device with udid: ${udid}, device name: ${deviceName}"
+
+                            // ADB 연결 상태 확인
+                            def deviceCheck = sh(script: "adb devices | grep ${udid} || echo 'notfound'", returnStdout: true).trim()
+                            
+                            if (deviceCheck.contains('notfound')) {
+                                error "❌ Device with UDID ${udid} not found!"
+                            }
+
+                            // ADB 명령어 실행
+                            sh "adb -s ${udid} reboot"
+                            sleep 10  // 재부팅 후 안정적인 실행을 위한 대기 시간
+                            
+                            // 기기 재연결 대기
+                            sh "adb -s ${udid} wait-for-device"
+                            println "✅ Device ${udid} is ready."
+                        } else {
+                            error "❌ UDID not found in app.properties"
+                        }
+                    }
+                }
+            }
+        }
+
+
+
         stage("Build") {
             when { expression {!map.skipByAppProperties} }
             agent {
