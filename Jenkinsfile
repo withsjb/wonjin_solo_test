@@ -208,7 +208,7 @@ pipeline {
                     script {
                         println "🔄🔄🔄 Rebooting the device before tests 🔄🔄🔄"
                         
-                        def appPropertiesPath = "${env.current_path}/src/main/resources/app.properties"  
+                        def appPropertiesPath = "${map.current_path}/src/main/resources/app.properties"  
                         echo "Using app.properties from: ${appPropertiesPath}"
                         // app.properties 파일 읽기
                         def propsContent = readFile(appPropertiesPath)  
