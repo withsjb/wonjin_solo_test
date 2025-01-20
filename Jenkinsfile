@@ -446,7 +446,7 @@ pipeline {
                         sh "ls -l '${map.current_path}/defect_screenshots/${value}.png'"
 
                         println "✅✅✅✅ ✅✅✅✅✅✅✅✅ ✅✅✅✅"
-ㄴ
+
 
                             // sh """
                             //     curl --insecure -D- \
