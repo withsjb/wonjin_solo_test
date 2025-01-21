@@ -718,7 +718,7 @@ def createBugPayload(String projectKey, String summary, String errre, String log
     // 로그 및 에러 메시지 처리
     String log = logdetail
     // String error = errre.replace("\n", "\\n").replace("\"", "\\\"")
-    String errre = "11"
+    String error = "11"
     
     // 실패 원인 텍스트
     String errordetail = "[테스트 실패 원인] " + errre
@@ -758,7 +758,7 @@ def createBugPayload(String projectKey, String summary, String errre, String log
                             ],
                             [
                                 "type": "text",
-                                "text": "${errre}"
+                                "text": "${error}"
                             ],
                             [
                                 "type": "hardBreak"
