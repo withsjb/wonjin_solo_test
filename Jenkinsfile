@@ -714,19 +714,18 @@ def init(def map) {
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
 
-def createBugPayload (String projectKey, String summary,String errre ,String logdetail, String issuetype) {
-    String log = logdetail.replace("\n", "\\n").replace("\"", "\\\"");
-      
+def createBugPayload(String projectKey, String summary, String errre, String logdetail, String issuetype) {
+    // 로그 및 에러 메시지 처리
+    String log = logdetail.replace("\n", "\\n").replace("\"", "\\\"")
+    String error = errre.replace("\n", "\\n").replace("\"", "\\\"")
+    
+    // 실패 원인 텍스트
+    String errordetail = "[테스트 실패 원인] " + errre
 
-    String error = errre.replace("\n", "\\n").replace("\"", "\\\"");
-
-    String errordetail = String.format(
-         errre
-    ) 
-
-    String description = String.format(
-        log 
-    )
+    // 로그 내용
+    String description = "{code}" + log + "{code}"
+    
+    // 새로운 description 구조로 변환
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
@@ -739,8 +738,8 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         "type": "paragraph",
                         "content": [
                             [
+                                "type": "text",
                                 "text": "[테스트 실패 원인]",
-                                "type": "text",
                                 "marks": [
                                     [
                                         "type": "strong"
@@ -748,35 +747,24 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                                     [
                                         "type": "textColor",
                                         "attrs": [
-                                            "color": "#ff0000"
+                                            "color": "#FF0000"
                                         ]
                                     ]
                                 ]
-                            ]
-                        ]
-                    ],
-                    [
-                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
-                    ],
-                    [
-                        "type": "paragraph",
-                        "content": [
+                            ],
                             [
-                                "text": "${errordetail}", // 여기에 실제 error 내용을 넣음
-                                "type": "text"
-                            ]
-                        ]
-                    ],
-                    [
-                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
-                    ],
-                    // 테스트 실패 로그 부분
-                    [
-                        "type": "paragraph",
-                        "content": [
+                                "type": "hardBreak"
+                            ],
                             [
+                                "type": "text",
+                                "text": "${errre}"
+                            ],
+                            [
+                                "type": "hardBreak"
+                            ],
+                            [
+                                "type": "text",
                                 "text": "[테스트 실패 로그]",
-                                "type": "text",
                                 "marks": [
                                     [
                                         "type": "strong"
@@ -784,15 +772,12 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                                     [
                                         "type": "textColor",
                                         "attrs": [
-                                            "color": "#ff0000"
+                                            "color": "#FF0000"
                                         ]
                                     ]
                                 ]
                             ]
                         ]
-                    ],
-                    [
-                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
                     ],
                     [
                         "type": "codeBlock",
@@ -801,20 +786,23 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         ],
                         "content": [
                             [
-                                "text": "${description}",  // 여기서 로그 내용을 코드 블록으로 삽입
-                                "type": "text"
+                                "type": "text",
+                                "text": "${description}"
                             ]
                         ]
                     ]
                 ]
             ],
             "assignee": [
-                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"  // Jira 로그인별 ID 값 필요
+                // ! Jira 로그인별 ID 값 변경 필요
+                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
             ],
             "issuetype": ["name": "${issuetype}"],
             "priority": ["name": "Medium"]
         ]
     ]
+    
+    // JSON 변환
     return JsonOutput.toJson(payload)
 }
 
