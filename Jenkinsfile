@@ -397,6 +397,7 @@ pipeline {
                                     String errorMessage = map.cucumber.error_message
 
                                     errordescrit(errorMessage);
+                                    println "befor errorreason --> ${errorreason}"
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -422,6 +423,7 @@ pipeline {
                                     String errorMessage = map.cucumber.error_message
 
                                     errordescrit(errorMessage);
+                                    println "after errorreason --> ${errorreason}"
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
@@ -443,9 +445,7 @@ pipeline {
                                             if (eachStep.status.contains("undefined")) {
                                                 isPassed = false
 
-                                                String errorMessage = map.cucumber.error_message
-
-                                    errordescrit(errorMessage);
+                                                
                                                 def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
                                                 "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
