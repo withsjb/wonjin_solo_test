@@ -725,7 +725,7 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
     ) 
 
     String description = String.format(
-          log 
+        log 
     )
     def payload = [
         "fields": [
@@ -756,19 +756,19 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         ]
                     ],
                     [
-                        "type": "hardBreak"
+                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
                     ],
                     [
                         "type": "paragraph",
                         "content": [
                             [
-                                "text": "${errordetail}",
+                                "text": "${errordetail}", // 여기에 실제 error 내용을 넣음
                                 "type": "text"
                             ]
                         ]
                     ],
                     [
-                        "type": "hardBreak"
+                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
                     ],
                     // 테스트 실패 로그 부분
                     [
@@ -792,7 +792,7 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         ]
                     ],
                     [
-                        "type": "hardBreak"
+                        "type": "hardBreak"  // hardBreak는 content 없이 단독 객체로 처리
                     ],
                     [
                         "type": "codeBlock",
@@ -801,7 +801,7 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         ],
                         "content": [
                             [
-                                "text": "${description}",
+                                "text": "${description}",  // 여기서 로그 내용을 코드 블록으로 삽입
                                 "type": "text"
                             ]
                         ]
@@ -809,7 +809,7 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                 ]
             ],
             "assignee": [
-                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
+                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"  // Jira 로그인별 ID 값 필요
             ],
             "issuetype": ["name": "${issuetype}"],
             "priority": ["name": "Medium"]
