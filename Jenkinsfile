@@ -721,14 +721,14 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
     String error = errre.replace("\n", "\\n").replace("\"", "\\\"");
 
     String errordetail = String.format(
-        "\\n{color:#FF0000}*[테스트 실패 원인]*{color}\\n" + errre
+         errre
     ) 
 
     String description = String.format(
         "\\n{color:#FF0000}*[테스트 실패 로그]*{color}\\n" +
         "{code}" + log + "{code}"
     )
-    
+    ${errordetail}
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
@@ -741,11 +741,48 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         "type": "paragraph",
                         "content": [
                             [
-                                "text": "${errordetail}",
-                                "type": "text"
+                                
+                                "text": "[테스트 실패 원인]",
+                                "type": "text",
+                                "marks":[
+                                    {
+                                    "type": "strong"
+                                    },
+                                    {
+                                    "type": "textColor",
+                                    "attrs": {
+                                    "color": "#ff0000"
+                                    }
+                                    }
+                                ]
                             ]
+                             [
+                        "type": "hardBreak",
+                        "content": [
+                            [
+                        "type": "text",
+                        "text": "${errordetail}"
+                            ],
+                        ]
+                    ]
                         ]
                     ],
+                       [
+                                
+                                "text": "[테스트 실패 원인]",
+                                "type": "text",
+                                "marks":[
+                                    {
+                                    "type": "strong"
+                                    },
+                                    {
+                                    "type": "textColor",
+                                    "attrs": {
+                                    "color": "#ff0000"
+                                    }
+                                    }
+                                ]
+                            ],
                     [
                         "type": "codeBlock",
                         "attrs": [
