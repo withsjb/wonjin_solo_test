@@ -394,10 +394,9 @@ pipeline {
                                     println "befor map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
-                                    String errorMessage = map.cucumber.error_message
-
-                                    errorreason =  errordescrit(errorMessage);
-                                    println "before errorreason --> ${errorreason}"
+                                    
+                                    
+                                    
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -422,10 +421,6 @@ pipeline {
                                     println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
-                                    String errorMessage = map.cucumber.error_message
-
-                                    errorreason =  errordescrit(errorMessage);
-                                    println "after errorreason --> ${errorreason}"
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
@@ -443,10 +438,8 @@ pipeline {
                                     def eachStep = step.result
                                     if (!eachStep.status.contains("passed")) {
                                         map.cucumber.error_message = eachStep.error_message
-                                        String errorMessage = map.cucumber.error_message
-
-                                        errorreason =  errordescrit(errorMessage);
-                                        println "each errorreason --> ${errorreason}"
+                                        
+                                        
                                         if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
@@ -492,24 +485,6 @@ pipeline {
                                 }
                             }
                             
-                            def errorMessage = map.cucumber.error_message
-
-                            if (errorMessage) {
-                                    try {
-                                        throw new Exception(errorMessage)
-                                    } catch (Exception t) {
-                                        def logBuffer = new StringBuilder()
-                                        for (StackTraceElement element : t.getStackTrace()) {
-                                            logBuffer.append(element.toString()).append("\n")
-                                        }
-                                        map.cucumber.error_stack_trace = logBuffer.toString()
-                                        println map.cucumber.error_stack_trace
-                                        int time = 10;
-                                       String ui = "예제 UI"; // 실제 값으로 교체
-                                         String anotherUi = "다른 UI"; // 실제 값으로 교체
-                                         errorreason =  geterrorReason(t, ui, anotherui, time);
-                                    }
-                                }
 
 
                             // if (isPassed) {
@@ -739,8 +714,12 @@ def init(def map) {
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
 
-def createBugPayload (String projectKey, String summary,String errre ,String log, String issuetype) {
-    
+def createBugPayload (String projectKey, String summary,String errre ,String logdetail, String issuetype) {
+    String log = logdetail.replace("\n", "\\n").replace("\"", "\\\"");
+      
+
+    String error = errre.replace("\n", "\\n").replace("\"", "\\\"");
+       
     String description = String.format(
 
                 "\\n{color:#FF0000}*[테스트 실패 원인]*{color}\\n" +
