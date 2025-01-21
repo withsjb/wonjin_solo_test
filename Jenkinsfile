@@ -353,6 +353,8 @@ pipeline {
             }
         }
 
+
+
         stage("Analysis test result") {
             when { expression {!map.skipByAppProperties} }
             agent { label "${map.current_node}" }
@@ -389,12 +391,16 @@ pipeline {
 
                                 if (!before.status.contains("passed")) {
                                     map.cucumber.error_message = before.error_message
-                                    println "11map.cucumber.error_message --> ${map.cucumber.error_message}"
+                                    println "map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
+
+                                    String errorMessage = map.cucumber.error_message
+
+                                    def errordescrit(errorMessage);
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
-                                        map.cucumber.error_message,
+                                        errorreason,
                                         map.jira.defect_issuetype)
                                         )
                                     
@@ -412,9 +418,13 @@ pipeline {
                                 if (!after.status.contains("passed")) {
                                     map.cucumber.error_message = after.error_message
                                     isPassed = false
+
+                                    String errorMessage = map.cucumber.error_message
+
+                                    def errordescrit(errorMessage);
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
-                                        map.cucumber.error_message,
+                                        errorreason,
                                         map.jira.defect_issuetype)
                                         )
                                     // ! Plan/Run linked with Bug
@@ -432,6 +442,10 @@ pipeline {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
                                                 isPassed = false
+    
+                                                String errorMessage = map.cucumber.error_message
+
+                                    def errordescrit(errorMessage);
                                                 def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
                                                 "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
@@ -471,6 +485,26 @@ pipeline {
                                 }
                             }
                             
+                            def errorMessage = map.cucumber.error_message
+
+                            if (errorMessage) {
+                                    try {
+                                        throw new Exception(errorMessage)
+                                    } catch (Exception t) {
+                                        def logBuffer = new StringBuilder()
+                                        for (StackTraceElement element : t.getStackTrace()) {
+                                            logBuffer.append(element.toString()).append("\n")
+                                        }
+                                        map.cucumber.error_stack_trace = logBuffer.toString()
+                                        println map.cucumber.error_stack_trace
+                                        int time = 10;
+                                       String ui = "예제 UI"; // 실제 값으로 교체
+                                         String anotherUi = "다른 UI"; // 실제 값으로 교체
+                                        String errorreason =  geterrorReason(t, ui, anotherui, time);
+                                    }
+                                }
+
+
                             // if (isPassed) {
                             //     // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
                             //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
@@ -693,6 +727,7 @@ def init(def map) {
     map.cucumber.log_suffix = ".feature.log"
     map.cucumber.result_json = null
     map.cucumber.error_message = null
+    errorreason = null
     // ! Cucumber reports 라는 Jenkins plugin을 설치하면 cucumber test를 build 시킬 때 아래와 같은 html 파일을 job number 별로 나눠서 떨어뜨려줌
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
@@ -851,4 +886,72 @@ def updateIssue(String baseUrl, String auth, String payload, String issueKey) {
     if (responseCode != 204) {
         throw new RuntimeException("Error - httpCode : ${responseCode}")
     }
+}
+
+
+def errordescrit(String errorMessage){
+
+                if (errorMessage) {
+                        try {
+                            throw new Exception(errorMessage)
+                        } catch (Exception t) {
+                            def logBuffer = new StringBuilder()
+                            for (StackTraceElement element : t.getStackTrace()) {
+                                logBuffer.append(element.toString()).append("\n")
+                            }
+                            map.cucumber.error_stack_trace = logBuffer.toString()
+                            println map.cucumber.error_stack_trace
+                            int time = 10;
+                            String ui = "예제 UI"; // 실제 값으로 교체
+                                String anotherUi = "다른 UI"; // 실제 값으로 교체
+                            errorreason =  geterrorReason(t, ui, anotherui, time);
+                        }
+                    }
+}
+
+
+def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
+    String errorReason;
+
+    switch (t.getClass().getSimpleName()) {
+            case "NoSuchElementException":
+                errorReason = String.format("UI 요소 %s를 찾지 못했습니다.", ui);
+                break;
+            case "ElementNotVisibleException":
+                errorReason = String.format("UI 요소 %s가 화면에 보이지 않습니다.", ui);
+                break;
+            case "StaleElementReferenceException":
+                errorReason = String.format("UI 요소 %s가 새로 로드되거나 화면에서 사라졌습니다.", ui);
+                break;
+            case "TimeoutException":
+                errorReason = String.format("UI 요소 %s가 %d초 동안 화면에 나타나지 않았습니다.", ui, time);
+                break;
+            case "NoSuchWindowException":
+                errorReason = "작업 중인 창을 찾을 수 없습니다.";
+                break;
+            case "WebDriverException":
+                errorReason = "WebDriver가 제대로 연결되지 않았거나 실행되지 않았습니다. 경로를 확인하세요.";
+                break;
+            case "SessionNotCreatedException":
+                errorReason = "WebDriver 세션을 시작할 수 없습니다. 드라이버 버전과 브라우저 버전을 확인하세요.";
+                break;
+            case "ElementClickInterceptedException":
+                errorReason = String.format("클릭하려는 요소 %s가 다른 요소 %s에 의해 가려져 있습니다.", ui, anotherUi);
+                break;
+            case "HttpRequestException":
+                errorReason = "네트워크 요청이 실패했습니다. 인터넷 및 와이파이를 확인하세요!";
+                break;
+            case "SocketTimeoutException":
+                errorReason = "네트워크가 지정된 시간 동안 응답을 받지 못했습니다. 인터넷 및 와이파이를 확인하세요!";
+                break;
+            case "RuntimeException":
+                errorReason = "테스트 진행 시간동안 요소가 나타나지 않았습니다.";
+                break;
+            default:
+                errorReason = "알 수 없는 오류가 발생했습니다. 오류 메시지: " + t.getMessage();
+                break;
+        }
+
+        return errorReason;
+
 }
