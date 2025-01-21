@@ -442,8 +442,8 @@ pipeline {
                                     def eachStep = step.result
                                     if (!eachStep.status.contains("passed")) {
                                         map.cucumber.error_message = eachStep.error_message
-                                        String errorreason = errordescrit(eachStep.error_message)
-                                                println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
+                                        errorreason = errordescrit(map.cucumber.error_message)
+                                        println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
                                         
                                         if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
@@ -471,6 +471,7 @@ pipeline {
                                         println currentIssue
                                         println map.cucumber.error_message
                                         println map.jira.defect_issuetype
+                                        println errorreason
                                         
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
