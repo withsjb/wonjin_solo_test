@@ -373,6 +373,7 @@ pipeline {
                             def isPassed = true
                             def currentIssue = null
                             def scenarioName = null
+                            def errorreason = ""
 
                             for (def result in clearResult) {
                                 // ! description에는 반드시 해당 jira issue key값이 들어있어야 한다. 상위 stage에서 이 부분을 처리해줬음
@@ -395,7 +396,7 @@ pipeline {
                                     isPassed = false
 
                                     
-                                    String errorreason = errordescrit(before.error_message)
+                                    errorreason = errordescrit(before.error_message)
                                     println "befor errorreason --> ${errorreason}"
                                     
                                     // ! create defect issue 
@@ -422,7 +423,7 @@ pipeline {
                                     println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
-                                    String errorreason = errordescrit(after.error_message)
+                                    errorreason = errordescrit(after.error_message)
                                     println "after errorreason --> ${errorreason}"
                                     
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
