@@ -395,7 +395,7 @@ pipeline {
                                     isPassed = false
 
                                     
-                                    def errorreason = errordescrit(before.error_message)
+                                    String errorreason = errordescrit(before.error_message)
                                     
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
@@ -421,7 +421,7 @@ pipeline {
                                     println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
-                                    def errorreason = errordescrit(after.error_message)
+                                    String errorreason = errordescrit(after.error_message)
                                     
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -446,7 +446,7 @@ pipeline {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
                                                 isPassed = false
-                                                def errorreason = errordescrit(eachStep.error_message)
+                                                String errorreason = errordescrit(eachStep.error_message)
                                                 def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
                                                 errorreason,
@@ -712,7 +712,6 @@ def init(def map) {
     map.cucumber.log_suffix = ".feature.log"
     map.cucumber.result_json = null
     map.cucumber.error_message = null
-    errorreason = null
     // ! Cucumber reports 라는 Jenkins plugin을 설치하면 cucumber test를 build 시킬 때 아래와 같은 html 파일을 job number 별로 나눠서 떨어뜨려줌
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
@@ -960,7 +959,7 @@ def errordescrit(String errorMessage){
 
 
 def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
-    
+    String errorReason
 
     switch (t.getClass().getSimpleName()) {
             case "NoSuchElementException":
