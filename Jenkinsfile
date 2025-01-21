@@ -761,7 +761,7 @@ def createBugPayload(String projectKey, String summary, String errre, String log
                             ],
                             [
                                 "type": "text",
-                                "text": "${error}"
+                                "text": "${errre}"
                             ],
                             [
                                 "type": "hardBreak"
