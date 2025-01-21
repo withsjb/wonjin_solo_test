@@ -396,6 +396,7 @@ pipeline {
 
                                     
                                     String errorreason = errordescrit(before.error_message)
+                                    println "befor errorreason --> ${errorreason}"
                                     
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
@@ -422,6 +423,7 @@ pipeline {
                                     isPassed = false
 
                                     String errorreason = errordescrit(after.error_message)
+                                    println "after errorreason --> ${errorreason}"
                                     
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -933,28 +935,33 @@ def updateIssue(String baseUrl, String auth, String payload, String issueKey) {
 
 
 def errordescrit(String errorMessage){
+    if (errorMessage != null && !errorMessage.trim().isEmpty()) {
+        try {
+            throw new RuntimeException(errorMessage)
+        } catch (RuntimeException t) {
+            def logBuffer = new StringBuilder()
+            for (StackTraceElement element : t.getStackTrace()) {
+                logBuffer.append(element.toString()).append("\n")
+            }
+            
+            if (map?.cucumber == null) {
+                map.cucumber = [:]
+            }
 
-                if (errorMessage) {
-                        try {
-                            throw new Exception(errorMessage)
-                        } catch (Exception t) {
-                            def logBuffer = new StringBuilder()
-                            for (StackTraceElement element : t.getStackTrace()) {
-                                logBuffer.append(element.toString()).append("\n")
-                            }
-                            map.cucumber.error_stack_trace = logBuffer.toString()
-                            println map.cucumber.error_stack_trace
-                            int time = 10;
-                            String ui = "예제 UI"; // 실제 값으로 교체
-                                String anotherUi = "다른 UI"; // 실제 값으로 교체
-                            // errorreason에 값을 저장
-                            String errorreason = geterrorReason(t, ui, anotherUi, time)
+            map.cucumber.error_stack_trace = logBuffer.toString()
+            println "Stack trace logged: \n${map.cucumber.error_stack_trace}"
 
-                            // errorreason을 map에 저장 (필요시 사용)
-                            return errorreason
-                        }
-                    }
-                    return null // errorMessage가 없으면 null 반환
+            int time = 10;
+            String ui = "로그인 버튼"  // 실제 UI 요소 값으로 변경
+            String anotherUi = "팝업 창"  // 실제 UI 요소 값으로 변경
+
+            String errorreason = geterrorReason(t, ui, anotherUi, time)
+            println "Generated error reason: ${errorreason}"
+
+            return errorreason
+        }
+    }
+    return "오류 메시지가 제공되지 않았습니다."  // 기본 메시지 반환
 }
 
 
