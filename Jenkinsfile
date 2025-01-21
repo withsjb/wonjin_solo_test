@@ -595,7 +595,7 @@ pipeline {
                     // remote.allowAnyHosts = true
 
                     // ! Jenkins Server 내 Plugin에 접근하여 빌드 ID에 따라 생성되는 cucumber report를 JIRA Issue (Tets Plan/Run)에 올려야 함. 
-                    sh("cd /server/was/.jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip")
+                    sh("cd /Users/sonjinbin/.jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip")
                     // sshCommand remote: remote, command: "cd /var/lib/jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u $TBELL_JIRA_CWCHOI_USR:$TBELL_JIRA_CWCHOI_PSW -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip"
                 }
             }
