@@ -391,7 +391,7 @@ pipeline {
 
                                 if (!before.status.contains("passed")) {
                                     map.cucumber.error_message = before.error_message
-                                    println "map.cucumber.error_message --> ${map.cucumber.error_message}"
+                                    println "befor map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
                                     String errorMessage = map.cucumber.error_message
@@ -419,6 +419,7 @@ pipeline {
 
                                 if (!after.status.contains("passed")) {
                                     map.cucumber.error_message = after.error_message
+                                    println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
                                     String errorMessage = map.cucumber.error_message
