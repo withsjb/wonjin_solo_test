@@ -719,14 +719,15 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
       
 
     String error = errre.replace("\n", "\\n").replace("\"", "\\\"");
-       
-    String description = String.format(
 
-                "\\n{color:#FF0000}*[테스트 실패 원인]*{color}\\n" +
-                errre +
-                "\\n{color:#FF0000}*[테스트 실패 로그]*{color}\\n" +
-                "{code}" + log + "{code}"
-                );
+    String errordetail = String.format(
+        "\\n{color:#FF0000}*[테스트 실패 원인]*{color}\\n" + errre
+    ) 
+
+    String description = String.format(
+        "\\n{color:#FF0000}*[테스트 실패 로그]*{color}\\n" +
+        "{code}" + log + "{code}"
+    )
     
     def payload = [
         "fields": [
@@ -736,6 +737,15 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                 "type": "doc",
                 "version": 1,
                 "content": [
+                    [
+                        "type": "paragraph",
+                        "content": [
+                            [
+                                "text": "${errordetail}",
+                                "type": "text"
+                            ]
+                        ]
+                    ],
                     [
                         "type": "codeBlock",
                         "attrs": [
