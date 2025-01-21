@@ -716,14 +716,15 @@ def init(def map) {
 
 def createBugPayload(String projectKey, String summary, String errre, String logdetail, String issuetype) {
     // 로그 및 에러 메시지 처리
-    String log = logdetail.replace("\n", "\\n").replace("\"", "\\\"")
-    String error = errre.replace("\n", "\\n").replace("\"", "\\\"")
+    String log = logdetail
+    // String error = errre.replace("\n", "\\n").replace("\"", "\\\"")
+    String error = "11"
     
     // 실패 원인 텍스트
     String errordetail = "[테스트 실패 원인] " + errre
 
     // 로그 내용
-    String description = "{code}" + log + "{code}"
+    String description =  log 
     
     // 새로운 description 구조로 변환
     def payload = [
