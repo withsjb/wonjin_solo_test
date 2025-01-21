@@ -725,10 +725,8 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
     ) 
 
     String description = String.format(
-        "\\n{color:#FF0000}*[테스트 실패 로그]*{color}\\n" +
-        "{code}" + log + "{code}"
+          log 
     )
-    ${errordetail}
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
@@ -741,48 +739,61 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                         "type": "paragraph",
                         "content": [
                             [
-                                
                                 "text": "[테스트 실패 원인]",
                                 "type": "text",
-                                "marks":[
-                                    {
-                                    "type": "strong"
-                                    },
-                                    {
-                                    "type": "textColor",
-                                    "attrs": {
-                                    "color": "#ff0000"
-                                    }
-                                    }
+                                "marks": [
+                                    [
+                                        "type": "strong"
+                                    ],
+                                    [
+                                        "type": "textColor",
+                                        "attrs": [
+                                            "color": "#ff0000"
+                                        ]
+                                    ]
                                 ]
                             ]
-                             [
-                        "type": "hardBreak",
-                        "content": [
-                            [
-                        "type": "text",
-                        "text": "${errordetail}"
-                            ],
-                        ]
-                    ]
                         ]
                     ],
-                       [
-                                
-                                "text": "[테스트 실패 원인]",
+                    [
+                        "type": "hardBreak"
+                    ],
+                    [
+                        "type": "paragraph",
+                        "content": [
+                            [
+                                "text": "${errordetail}",
+                                "type": "text"
+                            ]
+                        ]
+                    ],
+                    [
+                        "type": "hardBreak"
+                    ],
+                    // 테스트 실패 로그 부분
+                    [
+                        "type": "paragraph",
+                        "content": [
+                            [
+                                "text": "[테스트 실패 로그]",
                                 "type": "text",
-                                "marks":[
-                                    {
-                                    "type": "strong"
-                                    },
-                                    {
-                                    "type": "textColor",
-                                    "attrs": {
-                                    "color": "#ff0000"
-                                    }
-                                    }
+                                "marks": [
+                                    [
+                                        "type": "strong"
+                                    ],
+                                    [
+                                        "type": "textColor",
+                                        "attrs": [
+                                            "color": "#ff0000"
+                                        ]
+                                    ]
                                 ]
-                            ],
+                            ]
+                        ]
+                    ],
+                    [
+                        "type": "hardBreak"
+                    ],
                     [
                         "type": "codeBlock",
                         "attrs": [
@@ -798,7 +809,6 @@ def createBugPayload (String projectKey, String summary,String errre ,String log
                 ]
             ],
             "assignee": [
-                // ! jira 로그인별 ID 값 변경 필요
                 "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
             ],
             "issuetype": ["name": "${issuetype}"],
