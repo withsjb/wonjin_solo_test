@@ -397,6 +397,7 @@ pipeline {
                                     String errorMessage = map.cucumber.error_message
 
                                     errorreason =  errordescrit(errorMessage);
+                                    println "before errorreason --> ${errorreason}"
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -423,6 +424,7 @@ pipeline {
                                     String errorMessage = map.cucumber.error_message
 
                                     errorreason =  errordescrit(errorMessage);
+                                    println "after errorreason --> ${errorreason}"
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
@@ -443,6 +445,7 @@ pipeline {
                                         String errorMessage = map.cucumber.error_message
 
                                         errorreason =  errordescrit(errorMessage);
+                                        println "each errorreason --> ${errorreason}"
                                         if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
@@ -916,9 +919,14 @@ def errordescrit(String errorMessage){
                             int time = 10;
                             String ui = "예제 UI"; // 실제 값으로 교체
                                 String anotherUi = "다른 UI"; // 실제 값으로 교체
-                            errorreason =  geterrorReason(t, ui, anotherui, time);
+                            // errorreason에 값을 저장
+                            String errorreason = geterrorReason(t, ui, anotherUi, time)
+
+                            // errorreason을 map에 저장 (필요시 사용)
+                            return errorreason
                         }
                     }
+                    return null // errorMessage가 없으면 null 반환
 }
 
 
