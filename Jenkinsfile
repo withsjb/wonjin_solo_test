@@ -396,12 +396,12 @@ pipeline {
 
                                     String errorMessage = map.cucumber.error_message
 
-                                    errordescrit(errorMessage);
-                                    println "befor errorreason --> ${errorreason}"
+                                    errorreason =  errordescrit(errorMessage);
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
+                                        map.cucumber.error_message,
                                         map.jira.defect_issuetype)
                                         )
                                     
@@ -422,11 +422,11 @@ pipeline {
 
                                     String errorMessage = map.cucumber.error_message
 
-                                    errordescrit(errorMessage);
-                                    println "after errorreason --> ${errorreason}"
+                                    errorreason =  errordescrit(errorMessage);
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
+                                        map.cucumber.error_message,
                                         map.jira.defect_issuetype)
                                         )
                                     // ! Plan/Run linked with Bug
@@ -440,14 +440,16 @@ pipeline {
                                     def eachStep = step.result
                                     if (!eachStep.status.contains("passed")) {
                                         map.cucumber.error_message = eachStep.error_message
+                                        String errorMessage = map.cucumber.error_message
+
+                                        errorreason =  errordescrit(errorMessage);
                                         if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
                                                 isPassed = false
-
-                                                
                                                 def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
+                                                errorreason,
                                                 "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
                                                 )
 
@@ -469,6 +471,7 @@ pipeline {
 
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
+                                        "",
                                         map.cucumber.error_message,
                                         map.jira.defect_issuetype)
                                         )
@@ -500,7 +503,7 @@ pipeline {
                                         int time = 10;
                                        String ui = "예제 UI"; // 실제 값으로 교체
                                          String anotherUi = "다른 UI"; // 실제 값으로 교체
-                                        String errorreason =  geterrorReason(t, ui, anotherui, time);
+                                         errorreason =  geterrorReason(t, ui, anotherui, time);
                                     }
                                 }
 
@@ -732,7 +735,16 @@ def init(def map) {
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
 
-def createBugPayload (String projectKey, String summary, String description, String issuetype) {
+def createBugPayload (String projectKey, String summary,String errre ,String log, String issuetype) {
+    
+    String description = String.format(
+
+                "\\n{color:#FF0000}*[테스트 실패 원인]*{color}\\n" +
+                errre +
+                "\\n{color:#FF0000}*[테스트 실패 로그]*{color}\\n" +
+                "{code}" + log + "{code}"
+                );
+    
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
