@@ -396,7 +396,7 @@ pipeline {
 
                                     String errorMessage = map.cucumber.error_message
 
-                                    def errordescrit(errorMessage);
+                                    errordescrit(errorMessage);
                                     // ! create defect issue 
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
@@ -421,7 +421,7 @@ pipeline {
 
                                     String errorMessage = map.cucumber.error_message
 
-                                    def errordescrit(errorMessage);
+                                    errordescrit(errorMessage);
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
                                         errorreason,
@@ -442,10 +442,10 @@ pipeline {
                                             // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                             if (eachStep.status.contains("undefined")) {
                                                 isPassed = false
-    
+
                                                 String errorMessage = map.cucumber.error_message
 
-                                    def errordescrit(errorMessage);
+                                    errordescrit(errorMessage);
                                                 def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
                                                 "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
