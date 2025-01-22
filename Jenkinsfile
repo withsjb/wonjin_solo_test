@@ -947,16 +947,12 @@ def errordescrit(String errorMessage){
                 logBuffer.append(element.toString()).append("\n")
             }
             
-            if (map?.cucumber == null) {
-                map.cucumber = [:]
-            }
-
-            map.cucumber.error_stack_trace = logBuffer.toString()
-            println "Stack trace logged: \n${map.cucumber.error_stack_trace}"
+            def errorStackTrace = logBuffer.toString()
+            println "Stack trace logged: \n${errorStackTrace}"
 
             int time = 10;
-            String ui = "로그인 버튼"  // 실제 UI 요소 값으로 변경
-            String anotherUi = "팝업 창"  // 실제 UI 요소 값으로 변경
+            String ui = "로그인 버튼"
+            String anotherUi = "팝업 창"
 
             String errorreason = geterrorReason(t, ui, anotherUi, time)
             println "Generated error reason: ${errorreason}"
@@ -964,7 +960,7 @@ def errordescrit(String errorMessage){
             return errorreason
         }
     }
-    return "오류 메시지가 제공되지 않았습니다."  // 기본 메시지 반환
+    return "오류 메시지가 제공되지 않았습니다."
 }
 
 
