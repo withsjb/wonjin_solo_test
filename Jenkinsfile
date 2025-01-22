@@ -955,7 +955,7 @@ def errordescrit(String errorMessage, String uiElement){
             println "Stack trace logged: \n${errorStackTrace}"
             println "오류난 ui: \n${uiElement}"
 
-            int time = 10;
+            int time = 30;
             
             String anotherUi = "팝업 창"
 
@@ -1004,7 +1004,7 @@ def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
                 errorReason = "네트워크가 지정된 시간 동안 응답을 받지 못했습니다. 인터넷 및 와이파이를 확인하세요!"
                 break
             case "RuntimeException":
-                errorReason = "테스트 진행 시간동안 요소가 나타나지 않았습니다."
+                errorReason = "테스트 진행 시간동안 ${ui}가 나타나지 않았습니다."
                 break
             default:
                 errorReason = "알 수 없는 오류가 발생했습니다. 오류 메시지: " + t.getMessage()
