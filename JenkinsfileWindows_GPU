@@ -420,6 +420,7 @@ pipeline {
                                 def clearResult = results[0].elements
                                 def currentIssue = null
                                 def scenarioName = null
+                                def errorreason = ""
                                 for (def result in clearResult) {
                                     // ! description에는 반드시 해당 jira issue key값이 들어있어야 한다. 상위 stage에서 이 부분을 처리해줬음
                                     if (result.description == "") {
@@ -439,6 +440,7 @@ pipeline {
                                         // ! create defect issue
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
+                                                errorreason,
                                                 map.cucumber.error_message,
                                                 map.jira.defect_issuetype)
                                         )
@@ -459,8 +461,11 @@ pipeline {
                                     if (!after.status.contains("passed")) {
                                         map.cucumber.error_message = after.error_message
                                         isPassed = false
+
+                                        errorreason = errordescrit(after.error_message)
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                 "Defect of test '${currentIssue}'",
+                                                errorreason,
                                                 map.cucumber.error_message,
                                                 map.jira.defect_issuetype)
                                         )
@@ -476,12 +481,17 @@ pipeline {
                                         def eachStep = step.result
                                         if (!eachStep.status.contains("passed")) {
                                             map.cucumber.error_message = eachStep.error_message
+                                            def uiElement = extractUiElement(map.cucumber.error_message)
+
+                                            errorreason = errordescrit(map.cucumber.error_message, uiElement)
+                                       
                                             if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
                                                 // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
                                                 if (eachStep.status.contains("undefined")) {
                                                     isPassed = false
                                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                             "Defect of test '${currentIssue}'",
+                                                            errorreason,
                                                             "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
                                                     )
                                                     // ! Plan/Run linked with Bug
@@ -500,9 +510,11 @@ pipeline {
                                             println currentIssue
                                             println map.cucumber.error_message
                                             println map.jira.defect_issuetype
+                                            println errorreason
 
                                             def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                                     "Defect of test '${currentIssue}'",
+                                                    errorreason,
                                                     map.cucumber.error_message,
                                                     map.jira.defect_issuetype)
                                             )
@@ -678,14 +690,14 @@ def init(def map) {
     map.git = [:]
     map.git.branch = "master"
     // map.git.url = "git://22.4.20.13/TBELL_PROJECT.git"
-    map.git.url = "https://github.com/reasonna/woongjin_auto"
+    map.git.url = "https://github.com/withsjb/wonjin_solo_test.git"
     map.jira = [:]
     // ! Jira Steps Plugin을 위해 Configure System에서 설정한 값
     // map.jira.site_name = "TBELL_PROJECT"
-    map.jira.site_name = "JIRA_CLOUD_WJ_YN"
-    map.jira.base_url = "https://wjthinkbig.atlassian.net"
-    map.jira.project_key = "HSWN"
-    map.jira.defect_issuetype = "Bug"
+    map.jira.site_name = "JIRA_CLOUD_JINBIN"
+    map.jira.base_url = "https://withsjb1.atlassian.net"
+    map.jira.project_key = "WON"
+    map.jira.defect_issuetype = "Defect"
     // ! scenario field on tests issue
     map.jira.scenario_field = "customfield_10086"
     // ! transition id for test start -> test fail
@@ -697,16 +709,16 @@ def init(def map) {
     // ! bug - test link name
     map.jira.tests_link = "Tests"
     // ! Job Run No. field
-    map.jira.job_link = "customfield_10091"
+    map.jira.job_link = "customfield_10062"
     // ! Test Result Link field
-    map.jira.test_result_link = "customfield_10092"
+    map.jira.test_result_link = "customfield_10063"
 
 
     map.const = [:]
-    // ! Test plan/Run의 'Test 대상' field
-    map.const.plan_tests = "customfield_10088"
+    // ! Test plan/Run의 'Test 대상' field 
+    map.const.plan_tests = "customfield_10059"
     // ! Test Plan/Run의 'Tablet Info' field (Multi Select field -> array)
-    map.const.test_env = "customfield_10095"
+    map.const.test_env = "customfield_10061"
     map.const.test_plan_issuetype = "Test Plan/Run"
     map.const.udid = null
 
@@ -730,7 +742,16 @@ def init(def map) {
     // ! Cucumber reports 라는 Jenkins plugin을 설치하면 cucumber test를 build 시킬 때 아래와 같은 html 파일을 job number 별로 나눠서 떨어뜨려줌
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
 }
-def createBugPayload (String projectKey, String summary, String description, String issuetype) {
+def createBugPayload(String projectKey, String summary, String errre, String logdetail, String issuetype) {
+    // 로그 및 에러 메시지 처리
+    String log = logdetail
+    
+    // 실패 원인 텍스트
+    String errordetail =  errre
+
+    // 로그 내용
+    String description =  log 
+    
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
@@ -740,14 +761,59 @@ def createBugPayload (String projectKey, String summary, String description, Str
                 "version": 1,
                 "content": [
                     [
+                        "type": "paragraph",
+                        "content": [
+                            [
+                                "type": "text",
+                                "text": "[테스트 실패 원인]",
+                                "marks": [
+                                    [
+                                        "type": "strong"
+                                    ],
+                                    [
+                                        "type": "textColor",
+                                        "attrs": [
+                                            "color": "#FF0000"
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            [
+                                "type": "hardBreak"
+                            ],
+                            [
+                                "type": "text",
+                                "text": "${errordetail}"
+                            ],
+                            [
+                                "type": "hardBreak"
+                            ],
+                            [
+                                "type": "text",
+                                "text": "[테스트 실패 로그]",
+                                "marks": [
+                                    [
+                                        "type": "strong"
+                                    ],
+                                    [
+                                        "type": "textColor",
+                                        "attrs": [
+                                            "color": "#FF0000"
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    [
                         "type": "codeBlock",
                         "attrs": [
                             "language": "java"
                         ],
                         "content": [
                             [
-                                "text": "${description}",
-                                "type": "text"
+                                "type": "text",
+                                "text": "${description}"
                             ]
                         ]
                     ]
@@ -916,4 +982,97 @@ def getPackageName(udid) {
         packageName = 'com.default.package'
     }
     return packageName
+}
+
+
+def errordescrit(String errorMessage, String uiElement){
+    if (errorMessage != null && !errorMessage.trim().isEmpty()) {
+        try {
+            throw new RuntimeException(errorMessage)
+        } catch (RuntimeException t) {
+            def logBuffer = new StringBuilder()
+            for (StackTraceElement element : t.getStackTrace()) {
+                logBuffer.append(element.toString()).append("\n")
+            }
+            
+            def errorStackTrace = logBuffer.toString()
+            println "Stack trace logged: \n${errorStackTrace}"
+            println "오류난 ui: \n${uiElement}"
+
+            int time = 30;
+            
+            String anotherUi = "팝업 창"
+
+            String errorreason = geterrorReason(t, uiElement, anotherUi, time)
+            println "Generated error reason: ${errorreason}"
+
+            return errorreason
+        }
+    }
+    return "오류 메시지가 제공되지 않았습니다."
+}
+
+
+def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
+    String errorReason
+
+    switch (t.getClass().getSimpleName()) {
+            case "NoSuchElementException":
+                errorReason = String.format("UI 요소 ${ui}를 찾지 못했습니다.")
+                break
+            case "ElementNotVisibleException":
+                errorReason = String.format("UI 요소 ${ui}가 화면에 보이지 않습니다.")
+                break
+            case "StaleElementReferenceException":
+                errorReason = String.format("UI 요소 ${ui}가 새로 로드되거나 화면에서 사라졌습니다.")
+                break
+            case "TimeoutException":
+                errorReason = String.format("UI 요소 ${ui}가 ${time}초 동안 화면에 나타나지 않았습니다.")
+                break
+            case "NoSuchWindowException":
+                errorReason = "작업 중인 창을 찾을 수 없습니다."
+                break
+            case "WebDriverException":
+                errorReason = "WebDriver가 제대로 연결되지 않았거나 실행되지 않았습니다. 경로를 확인하세요."
+                break
+            case "SessionNotCreatedException":
+                errorReason = "WebDriver 세션을 시작할 수 없습니다. 드라이버 버전과 브라우저 버전을 확인하세요."
+                break
+            case "ElementClickInterceptedException":
+                errorReason = String.format("클릭하려는 요소 ${ui}가 다른 요소 ${anotherUi}에 의해 가려져 있습니다.")
+                break
+            case "HttpRequestException":
+                errorReason = "네트워크 요청이 실패했습니다. 인터넷 및 와이파이를 확인하세요!"
+                break
+            case "SocketTimeoutException":
+                errorReason = "네트워크가 지정된 시간 동안 응답을 받지 못했습니다. 인터넷 및 와이파이를 확인하세요!"
+                break
+            case "RuntimeException":
+                errorReason = "테스트 진행 시간동안 ${ui}가 나타나지 않았습니다."
+                break
+            default:
+                errorReason = "알 수 없는 오류가 발생했습니다. 오류 메시지: " + t.getMessage()
+                break
+        }
+
+        return errorReason
+
+}
+
+
+def extractUiElement(String errorMessage) {
+    def idPattern = ~/By\.id:\s*([\w:.]+)/    // By.id 추출 정규식
+    def xpathPattern = ~/By\.xpath:\s*([^\s]+)/ // By.xpath 추출 정규식
+
+    def matcher = errorMessage =~ idPattern
+    if (matcher.find()) {
+        return matcher.group(1)  // 추출된 ID 값 반환
+    }
+
+    matcher = errorMessage =~ xpathPattern
+    if (matcher.find()) {
+        return matcher.group(1)  // 추출된 XPath 값 반환
+    }
+
+    return "알 수 없는 UI 요소"
 }
