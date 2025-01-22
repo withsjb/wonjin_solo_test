@@ -443,7 +443,8 @@ pipeline {
                                     def eachStep = step.result
                                     if (!eachStep.status.contains("passed")) {
                                         map.cucumber.error_message = eachStep.error_message
-                                        def uiElement = step?.match?.arguments?.size() > 0 ? step.match.arguments[0].value : "알 수 없는 UI 요소"
+                                        def uiElement = extractUiElement(map.cucumber.error_message)
+
         
                                         errorreason = errordescrit(map.cucumber.error_message, uiElement)
                                         
@@ -1012,4 +1013,22 @@ def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
 
         return errorReason
 
+}
+
+
+def extractUiElement(String errorMessage) {
+    def idPattern = ~/By\.id:\s*([\w:.]+)/    // By.id 추출 정규식
+    def xpathPattern = ~/By\.xpath:\s*([^\s]+)/ // By.xpath 추출 정규식
+
+    def matcher = errorMessage =~ idPattern
+    if (matcher.find()) {
+        return matcher.group(1)  // 추출된 ID 값 반환
+    }
+
+    matcher = errorMessage =~ xpathPattern
+    if (matcher.find()) {
+        return matcher.group(1)  // 추출된 XPath 값 반환
+    }
+
+    return "알 수 없는 UI 요소"
 }
