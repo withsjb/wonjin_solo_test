@@ -443,7 +443,10 @@ pipeline {
                                     def eachStep = step.result
                                     if (!eachStep.status.contains("passed")) {
                                         map.cucumber.error_message = eachStep.error_message
-                                        errorreason = errordescrit(map.cucumber.error_message)
+                                        def uiElement = step?.match?.arguments?.size() > 0 ? step.match.arguments[0].value : "알 수 없는 UI 요소"
+        
+                                        errorreason = errordescrit(map.cucumber.error_message, uiElement)
+                                        
                                         println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
                                         
                                         if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
@@ -937,7 +940,7 @@ def updateIssue(String baseUrl, String auth, String payload, String issueKey) {
 }
 
 
-def errordescrit(String errorMessage){
+def errordescrit(String errorMessage, String uiElement){
     if (errorMessage != null && !errorMessage.trim().isEmpty()) {
         try {
             throw new RuntimeException(errorMessage)
@@ -949,12 +952,13 @@ def errordescrit(String errorMessage){
             
             def errorStackTrace = logBuffer.toString()
             println "Stack trace logged: \n${errorStackTrace}"
+            println "오류난 ui: \n${uiElement}"
 
             int time = 10;
-            String ui = "로그인 버튼"
+            
             String anotherUi = "팝업 창"
 
-            String errorreason = geterrorReason(t, ui, anotherUi, time)
+            String errorreason = geterrorReason(t, uiElement, anotherUi, time)
             println "Generated error reason: ${errorreason}"
 
             return errorreason
@@ -969,16 +973,16 @@ def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
 
     switch (t.getClass().getSimpleName()) {
             case "NoSuchElementException":
-                errorReason = String.format("UI 요소 %s를 찾지 못했습니다.", ui)
+                errorReason = String.format("UI 요소 ${ui}를 찾지 못했습니다.")
                 break
             case "ElementNotVisibleException":
-                errorReason = String.format("UI 요소 %s가 화면에 보이지 않습니다.", ui)
+                errorReason = String.format("UI 요소 ${ui}가 화면에 보이지 않습니다.")
                 break
             case "StaleElementReferenceException":
-                errorReason = String.format("UI 요소 %s가 새로 로드되거나 화면에서 사라졌습니다.", ui)
+                errorReason = String.format("UI 요소 ${ui}가 새로 로드되거나 화면에서 사라졌습니다.")
                 break
             case "TimeoutException":
-                errorReason = String.format("UI 요소 %s가 %d초 동안 화면에 나타나지 않았습니다.", ui, time)
+                errorReason = String.format("UI 요소 ${ui}가 ${time}초 동안 화면에 나타나지 않았습니다.")
                 break
             case "NoSuchWindowException":
                 errorReason = "작업 중인 창을 찾을 수 없습니다."
@@ -990,7 +994,7 @@ def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
                 errorReason = "WebDriver 세션을 시작할 수 없습니다. 드라이버 버전과 브라우저 버전을 확인하세요."
                 break
             case "ElementClickInterceptedException":
-                errorReason = String.format("클릭하려는 요소 %s가 다른 요소 %s에 의해 가려져 있습니다.", ui, anotherUi)
+                errorReason = String.format("클릭하려는 요소 ${ui}가 다른 요소 ${anotherUi}에 의해 가려져 있습니다.")
                 break
             case "HttpRequestException":
                 errorReason = "네트워크 요청이 실패했습니다. 인터넷 및 와이파이를 확인하세요!"
