@@ -183,7 +183,7 @@ pipeline {
                 label "${map.current_node}"
             }
             steps {
-                 dir("${map.current_path}") {
+                dir("${map.current_path}")
 
                  {
                      script {
