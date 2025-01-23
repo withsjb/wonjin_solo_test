@@ -183,7 +183,7 @@ pipeline {
                 label "${map.current_node}"
             }
             steps {
-                dir("${test_link}")
+                dir("${map.current_path}") {
 
                  {
                      script {
@@ -352,7 +352,7 @@ pipeline {
 
                             map.testcases.each { key, value ->
                                 // ! 테스트 후 생성된 cucumber.json 파일을 가져온다.
-                                map.cucumber.result_json = readFile file: "./a_features/${key}/${map.cucumber.report_json}"
+                                map.cucumber.result_json = readFile file: "${map.cucumber.feature_path}/a_features/${key}/${map.cucumber.report_json}"
                                 def folder = "${key}"
                                 println "key_________________>${key}"
                                 println "value_________________>${value}"
