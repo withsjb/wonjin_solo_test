@@ -754,6 +754,7 @@ def createBugPayload(String projectKey, String summary, String errre, String log
     // 로그 내용
     String description =  log 
     
+    // 새로운 description 구조로 변환
     def payload = [
         "fields": [
             "project": ["key": "${projectKey}"],
@@ -822,13 +823,15 @@ def createBugPayload(String projectKey, String summary, String errre, String log
                 ]
             ],
             "assignee": [
-                // ! jira 로그인별 ID 값 변경 필요
-                "id": "63fd816e9cba7ca028770bb2"
+                // ! Jira 로그인별 ID 값 변경 필요
+                "id": "712020:274498f4-ced6-44f6-ae56-7d1ef20acba1"
             ],
             "issuetype": ["name": "${issuetype}"],
-            "priority": ["name": "Major"]
+            "priority": ["name": "Medium"]
         ]
     ]
+    
+    // JSON 변환
     return JsonOutput.toJson(payload)
 }
 // JIRA API
