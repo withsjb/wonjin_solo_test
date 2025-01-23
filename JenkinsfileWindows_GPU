@@ -183,7 +183,7 @@ pipeline {
                 label "${map.current_node}"
             }
             steps {
-                dir("${map.current_path}") {
+                dir("${test_link}") {
                      script {
                         println "✅✅✅✅ Build ✅✅✅✅"
                         try {
@@ -742,6 +742,7 @@ def init(def map) {
     map.cucumber.error_message = null
     // ! Cucumber reports 라는 Jenkins plugin을 설치하면 cucumber test를 build 시킬 때 아래와 같은 html 파일을 job number 별로 나눠서 떨어뜨려줌
     map.cucumber.report_link = "cucumber-html-reports_fb242bb7-17b2-346f-b0a4-d7a3b25b65b4/overview-features.html"
+    test_link = "C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2"
 }
 def createBugPayload(String projectKey, String summary, String errre, String logdetail, String issuetype) {
     // 로그 및 에러 메시지 처리
