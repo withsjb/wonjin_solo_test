@@ -643,7 +643,7 @@ def init(def map) {
         "M1 Pad":"C:\\Users\\TB-NTB-024\\CICD\\M101\\workspace\\WJ_Test",
         "M2 Pad":"C:\\Users\\TB-NTB-024\\CICD\\M102\\workspace\\WJ_Test",
         "SM-T500":"C:\\Users\\TB-NTB-052\\CICD\\SM-T500\\workspace\\WJ_Test",
-        "T583":"C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\WJ_Test",
+        "T583":"C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2",
         "X200":"C:\\Users\\TB-NTB-223\\CICD\\X200\\workspace\\WJ_Test"
     ]
     map.git = [:]
