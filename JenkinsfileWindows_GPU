@@ -15,7 +15,7 @@ pipeline {
     environment {
         // ! Jenkins Web에서 설정한 값
         // TBELL_JIRA_CWCHOI = credentials('tbell-jira-project')
-        JIRA_CLOUD_CREDENTIALS = credentials('WJ_JIRA_CLOULD_YN')
+        JIRA_CLOUD_CREDENTIALS = credentials('JIRA_CLOULD_JINBIN')
         // ! Jira trigger를 통해 자동으로 받는 값
         JIRA_ISSUE_KEY = "${JIRA_TEST_PLAN_KEY}"
         // TBELL_BACKUP_AUTH = credentials('backup_server_tbell')
