@@ -1,8 +1,6 @@
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-
-
 def map = [:]
 pipeline {
     agent {
@@ -151,6 +149,7 @@ pipeline {
                         // fileExists는 Jenkins Pipeline에서 제공하는 method로 동일하게 사용 가능
                         if (fileExists("${map.cucumber.feature_path}")) {
                             // 해당 파일/폴더가 있다면 지움
+                            
                             sh script: """ rm -rf "${map.cucumber.feature_path}" """, returnStdout: false
                         }
                         // 해당 폴더가 없으면 만듦
