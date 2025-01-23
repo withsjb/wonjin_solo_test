@@ -699,7 +699,7 @@ def init(def map) {
     map.jira.project_key = "WON"
     map.jira.defect_issuetype = "Defect"
     // ! scenario field on tests issue
-    map.jira.scenario_field = "customfield_10086"
+    map.jira.scenario_field = "customfield_10058"
     // ! transition id for test start -> test fail
     map.jira.fail_transition = "21"
     // ! transition id for test start -> finish
