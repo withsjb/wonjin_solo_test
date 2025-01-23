@@ -688,7 +688,7 @@ def init(def map) {
     // ! Test Plan/Run issue의 컴포넌트에서 값이 있다면 이 feature_name에 지정할 것
     map.cucumber.feature_name = null
     // ! feature파일의 생성 경로
-    map.cucumber.feature_path = "a_features"
+    map.cucumber.feature_path = "C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2\\a_features"
     map.cucumber.defect_screenshot_path = "defect_screenshots"
     // ! defect가 생길경우 해당 defect issue key와 해당 defect를 생성시킨 testcase의 scenario명을 저장하기 위함
     map.cucumber.defect_info = [:]
