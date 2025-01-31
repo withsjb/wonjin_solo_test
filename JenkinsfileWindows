@@ -587,69 +587,18 @@ pipeline {
             println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"
 
             try {
-                // 현재 날짜와 시간
                 def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")
-
-                // 실패 및 총 시나리오 수
                 def failedCount = map.cucumber.defect_info.size()
                 def totalCount = map.testcases.size()
 
-                // 테이블 데이터 생성 함수 정의
-                def createTableCell = { text, color = null ->
-                    def cell = [
-                        type: "tableCell",
-                        content: [
-                            [
-                                type: "paragraph",
-                                content: [
-                                    [
-                                        type: "text",
-                                        text: text,
-                                        marks: color ? [[type: "textColor", attrs: [color: color]]] : []
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                    return cell
-                }
-
-                def createTableRow = { rowContent ->
-                    [
-                        type: "tableRow",
-                        content: rowContent
-                    ]
-                }
-
-                // 테이블 행 구성
-                def headerRow = createTableRow([
-                    createTableCell("Test Run Result (${currentDate})", "#0366d6"),
-                    createTableCell("Details")
-                ])
-
-                def failedRow = createTableRow([
-                    createTableCell("Failed Scenarios"),
-                    createTableCell("${failedCount}")
-                ])
-
-                def totalRow = createTableRow([
-                    createTableCell("Total Scenarios"),
-                    createTableCell("${totalCount}")
-                ])
-
-                // 테이블 구조 생성
-                def tableContent = [
-                    type: "table",
-                    content: [headerRow, failedRow, totalRow]
-                ]
+                def descriptionPayload = createTablePayload(failedCount, totalCount, currentDate)
 
                 def payload = [
                     fields: [
-                        description: [type: "doc", content: [tableContent]]
+                        description: descriptionPayload
                     ]
                 ]
 
-                // Jira 이슈 업데이트
                 updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
             } catch (error) {
                 println "Warning: Failed to update Test Plan description: ${error.message}"
@@ -800,6 +749,47 @@ def createBugPayload(String projectKey, String summary, String errre, String log
     // 로그 내용
     String description =  log 
     
+
+    def createTablePayload = { failedCount, totalCount, currentDate ->
+    return [
+        "type": "doc",
+        "version": 1,
+        "content": [
+            [
+                "type": "table",
+                "content": [
+                    [
+                        "type": "tableRow",
+                        "content": [
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "테스트 항목"]]]]],
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "결과"]]]]]
+                        ]
+                    ],
+                    [
+                        "type": "tableRow",
+                        "content": [
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "실패 시나리오 수"]]]]],
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "${failedCount}"]]]]]
+                        ]
+                    ],
+                    [
+                        "type": "tableRow",
+                        "content": [
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "총 시나리오 수"]]]]],
+                            ["type": "tableCell", "content": [["type": "paragraph", "content": [["type": "text", "text": "${totalCount}"]]]]]
+                        ]
+                    ]
+                ]
+            ],
+            [
+                "type": "paragraph",
+                "content": [["type": "text", "text": "테스트 실행 시간: ${currentDate}"]]
+            ]
+        ]
+    ]
+}
+
+
     // 새로운 description 구조로 변환
     def payload = [
         "fields": [
