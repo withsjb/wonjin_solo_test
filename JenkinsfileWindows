@@ -350,15 +350,16 @@ pipeline {
 
                         try {
                             def isPassed = true
+                            def uiElement = "알 수 없는 UI 요소"
+                            
 
                             map.testcases.each { key, value ->
                                 // ! 테스트 후 생성된 cucumber.json 파일을 가져온다.
-                                map.cucumber.result_json = readFile file: "${test_link}/a_features/${key}/${map.cucumber.report_json}"
+                                map.cucumber.result_json = readFile file: "./a_features/${key}/${map.cucumber.report_json}"
                                 def folder = "${key}"
                                 println "key_________________>${key}"
                                 println "value_________________>${value}"
                                 println "folder___________>${folder}"
-                                println "map.cucumber.result_json >${map.cucumber.result_json}"
                                 // bat encoding:"UTF-8", script: """copy ./defect_screenshots/${scenarioName}.png ./a_features/${folder}/error_screenShot.png""", returnStdout: false
                                 // ! 가져온 cucumber.json 파일을 parsing
                                 def results = new JsonSlurper().parseText(map.cucumber.result_json as String)
@@ -382,15 +383,16 @@ pipeline {
                                     if (!before.status.contains("passed")) {
                                         map.cucumber.error_message = before.error_message
                                         isPassed = false
+                                        uiElement = extractUiElement(map.cucumber.error_message)
 
-                                        errorreason = errordescrit(before.error_message)
+                                        errorreason = errordescrit(before.error_message, uiElement)
                                         // ! create defect issue
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                        "Defect of test '${currentIssue}'",
-                                        errorreason,
-                                        map.cucumber.error_message,
-                                        map.jira.defect_issuetype)
-                                        )
+                                            "Defect of test '${currentIssue}'",
+                                            errorreason,
+                                            map.cucumber.error_message,
+                                            map.jira.defect_issuetype)
+                                            )
 
 
                                         // ! 추후 stage에서 screenshot을 attach할 때 필요한 정보들
@@ -408,15 +410,14 @@ pipeline {
                                     if (!after.status.contains("passed")) {
                                         map.cucumber.error_message = after.error_message
                                         isPassed = false
-                                        println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
-                                     println "after errorreason --> ${errorreason}"
-                                        errorreason = errordescrit(after.error_message)
+                                        uiElement = extractUiElement(map.cucumber.error_message)
+                                        errorreason = errordescrit(after.error_message, uiElement)
                                         def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                                "Defect of test '${currentIssue}'",
-                                                errorreason,
-                                                map.cucumber.error_message,
-                                                map.jira.defect_issuetype)
-                                        )
+                                            "Defect of test '${currentIssue}'",
+                                            errorreason,
+                                            map.cucumber.error_message,
+                                            map.jira.defect_issuetype)
+                                            )
 
                                         // ! Plan/Run linked with Bug
                                         linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
@@ -429,7 +430,7 @@ pipeline {
                                         def eachStep = step.result
                                         if (!eachStep.status.contains("passed")) {
                                             map.cucumber.error_message = eachStep.error_message
-                                           def uiElement = extractUiElement(map.cucumber.error_message)
+                                            uiElement = extractUiElement(map.cucumber.error_message)
                                             println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
                                             errorreason = errordescrit(map.cucumber.error_message, uiElement)
                                             if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
@@ -437,9 +438,9 @@ pipeline {
                                                 if (eachStep.status.contains("undefined")) {
                                                     isPassed = false
                                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                                            "Defect of test '${currentIssue}'",
-                                                            errorreason,
-                                                            "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
+                                                    "Defect of test '${currentIssue}'",
+                                                    errorreason,
+                                                    "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
                                                     )
                                                     // ! Plan/Run linked with Bug
                                                     linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
@@ -460,10 +461,11 @@ pipeline {
                                             println errorreason
 
                                             def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                                    "Defect of test '${currentIssue}'",
-                                                    errorreason,
-                                                    map.cucumber.error_message,
-                                                    map.jira.defect_issuetype)
+                                            "Defect of test '${currentIssue}'",
+                                            errorreason,
+
+                                            map.cucumber.error_message,
+                                            map.jira.defect_issuetype)
                                             )
 
 
@@ -576,6 +578,44 @@ pipeline {
                     }
                 }
             }
+        }
+        stage("Update Test Plan Description") {  
+            when { expression {!map.skipByAppProperties} }  
+            agent { label "${map.current_node}" }  
+            steps {  
+                script {  
+                    println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"  
+                    
+                    try {  
+                        // 현재 날짜와 시간
+                        def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
+                        // 스테이지 결과를 map에 저장
+                            def failedCount = map.cucumber.defect_info.size()  // 실패한 시나리오의 수
+                            println "실패한 시나리오의 수 --> ${failedCount}"  
+                            def totalCount = map.testcases.size()  // 총 시나리오의 수
+                            println "총 시나리오의 수 --> ${totalCount}"  
+                        
+                        // 새로운 설명 생성  
+                        def newDescription = """Test Run Result (${currentDate})  
+                        Failed Scenarios: ${failedCount}  
+                        Total Scenarios: ${totalCount}  
+                        ----------------------------------------  
+
+                        """  
+                        // 기존 설명을 가져와서 새로운 설명 뒤에 추가  
+                        def existingDescription = map.issue.data.fields.description ?: ""  
+                        def payload = [  
+                            fields: [  
+                                description: newDescription + existingDescription  
+                            ]  
+                        ]  
+                        // Jira 이슈를 업데이트
+                        updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)  
+                    } catch (error) {  
+                        println "Warning: Failed to update Test Plan description: ${error.message}"  
+                    }  
+                }  
+            }  
         }
         // stage("Zip file transfer") {
         //     steps {
