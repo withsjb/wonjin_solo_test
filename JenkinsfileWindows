@@ -707,9 +707,9 @@ def init(def map) {
     // ! scenario field on tests issue
     map.jira.scenario_field = "customfield_10058"
     // ! transition id for test start -> test fail
-    map.jira.fail_transition = "21"
+    map.jira.fail_transition = "10033"
     // ! transition id for test start -> finish
-    map.jira.success_transition = "31"
+    map.jira.success_transition = "10034"
     // ! plan/run - bug link name
     map.jira.defect_link = "Defect"
     // ! bug - test link name
