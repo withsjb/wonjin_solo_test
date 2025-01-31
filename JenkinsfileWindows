@@ -484,13 +484,13 @@ pipeline {
                                 }
                             }
 
-                            if (isPassed) {
-                                // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
-                            } else {
-                                // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-                            }
+                            // if (isPassed) {
+                            //     // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
+                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
+                            // } else {
+                            //     // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
+                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
+                            // }
                         } catch (error) {
                             throwableException(map, error)
                         }
