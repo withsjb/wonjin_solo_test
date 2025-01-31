@@ -579,44 +579,84 @@ pipeline {
                 }
             }
         }
-        stage("Update Test Plan Description") {  
-            when { expression {!map.skipByAppProperties} }  
-            agent { label "${map.current_node}" }  
-            steps {  
-                script {  
-                    println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"  
-                    
-                    try {  
-                        // 현재 날짜와 시간
-                        def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
-                        // 스테이지 결과를 map에 저장
-                            def failedCount = map.cucumber.defect_info.size()  // 실패한 시나리오의 수
-                            println "실패한 시나리오의 수 --> ${failedCount}"  
-                            def totalCount = map.testcases.size()  // 총 시나리오의 수
-                            println "총 시나리오의 수 --> ${totalCount}"  
-                        
-                        // 새로운 설명 생성  
-                        def newDescription = """Test Run Result (${currentDate})  
-                        Failed Scenarios: ${failedCount}  
-                        Total Scenarios: ${totalCount}  
-                        ----------------------------------------  
+        stage("Update Test Plan Description") {
+    when { expression {!map.skipByAppProperties} }
+    agent { label "${map.current_node}" }
+    steps {
+        script {
+            println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"
 
-                        """  
-                        // 기존 설명을 가져와서 새로운 설명 뒤에 추가  
-                        def existingDescription = map.issue.data.fields.description ?: ""  
-                        def payload = [  
-                            fields: [  
-                                description: newDescription + existingDescription  
-                            ]  
-                        ]  
-                        // Jira 이슈를 업데이트
-                        updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)  
-                    } catch (error) {  
-                        println "Warning: Failed to update Test Plan description: ${error.message}"  
-                    }  
-                }  
-            }  
+            try {
+                // 현재 날짜와 시간
+                def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")
+
+                // 실패 및 총 시나리오 수
+                def failedCount = map.cucumber.defect_info.size()
+                def totalCount = map.testcases.size()
+
+                // 테이블 데이터 생성 함수 정의
+                def createTableCell = { text, color = null ->
+                    def cell = [
+                        type: "tableCell",
+                        content: [
+                            [
+                                type: "paragraph",
+                                content: [
+                                    [
+                                        type: "text",
+                                        text: text,
+                                        marks: color ? [[type: "textColor", attrs: [color: color]]] : []
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                    return cell
+                }
+
+                def createTableRow = { rowContent ->
+                    [
+                        type: "tableRow",
+                        content: rowContent
+                    ]
+                }
+
+                // 테이블 행 구성
+                def headerRow = createTableRow([
+                    createTableCell("Test Run Result (${currentDate})", "#0366d6"),
+                    createTableCell("Details")
+                ])
+
+                def failedRow = createTableRow([
+                    createTableCell("Failed Scenarios"),
+                    createTableCell("${failedCount}")
+                ])
+
+                def totalRow = createTableRow([
+                    createTableCell("Total Scenarios"),
+                    createTableCell("${totalCount}")
+                ])
+
+                // 테이블 구조 생성
+                def tableContent = [
+                    type: "table",
+                    content: [headerRow, failedRow, totalRow]
+                ]
+
+                def payload = [
+                    fields: [
+                        description: [type: "doc", content: [tableContent]]
+                    ]
+                ]
+
+                // Jira 이슈 업데이트
+                updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
+            } catch (error) {
+                println "Warning: Failed to update Test Plan description: ${error.message}"
+            }
         }
+    }
+}
         // stage("Zip file transfer") {
         //     steps {
         //         script {
