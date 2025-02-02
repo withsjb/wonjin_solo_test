@@ -484,13 +484,7 @@ pipeline {
                                 }
                             }
 
-                            if (isPassed) {
-                                // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
-                            } else {
-                                // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
-                                transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-                            }
+                            
                         } catch (error) {
                             throwableException(map, error)
                         }
@@ -579,7 +573,9 @@ pipeline {
                 }
             }
         }
-        stage("Update Test Plan Description") {  
+        import groovy.json.JsonOutput
+
+stage("Update Test Plan Description") {  
     when { expression {!map.skipByAppProperties} }  
     agent { label "${map.current_node}" }  
     steps {  
@@ -590,35 +586,40 @@ pipeline {
                 // 현재 날짜와 시간
                 def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
                 
-                // 스테이지 결과 저장
-                def failedCount = map.cucumber.defect_info.size()  // 실패한 시나리오의 수
-                println "실패한 시나리오의 수 --> ${failedCount}"  
-                def totalCount = map.testcases.size()  // 총 시나리오의 수
-                println "총 시나리오의 수 --> ${totalCount}"  
-                
+                // 스테이지 결과를 map에 저장
+                def failedCount = map.cucumber.defect_info.size()  
+                def totalCount = map.testcases.size()  
+
                 // 테이블 데이터 생성
-                def tableContent = [
+                def tableRows = [
                     [
-                        ["text": "테스트 실행 날짜"], ["text": currentDate]
+                        ["text": "테스트 날짜"], ["text": currentDate]
                     ],
                     [
                         ["text": "총 시나리오 수"], ["text": "${totalCount}"]
                     ],
                     [
-                        ["text": "실패 시나리오 수"], ["text": "${failedCount}"]
+                        ["text": "실패 시나리오 수", "color": "#d32f2f"], ["text": "${failedCount}"]
                     ]
                 ].collect { row ->
                     return [
                         "type": "tableRow",
                         "content": row.collect { cell ->
+                            def textData = [
+                                "type": "text", 
+                                "text": cell.text
+                            ]
+                            if (cell.color) {
+                                textData["marks"] = [
+                                    ["type": "textColor", "attrs": ["color": cell.color]]
+                                ]
+                            }
                             [
                                 "type": "tableCell",
                                 "content": [
                                     [
                                         "type": "paragraph",
-                                        "content": [
-                                            ["type": "text", "text": cell.text]
-                                        ]
+                                        "content": [textData]
                                     ]
                                 ]
                             ]
@@ -637,28 +638,29 @@ pipeline {
                                 "layout": "center",
                                 "width": 900
                             ],
-                            "content": tableContent
+                            "content": tableRows
                         ]
                     ]
                 ]
 
                 // 기존 설명 가져오기
-                def existingDescription = map.issue.data.fields.description ?: ""  
+                def existingDescription = map.issue.data.fields.description ?: ""
                 def payload = [  
                     fields: [  
                         description: descriptionPayload  
                     ]  
-                ]  
+                ]
 
                 // Jira 이슈 업데이트
-                updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)  
-                
+                updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
+
             } catch (error) {  
                 println "Warning: Failed to update Test Plan description: ${error.message}"  
             }  
         }  
     }  
 }
+
         // stage("Zip file transfer") {
         //     steps {
         //         script {
