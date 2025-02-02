@@ -573,7 +573,7 @@ pipeline {
                 }
             }
         }
-        import groovy.json.JsonOutput
+        
 
 stage("Update Test Plan Description") {  
     when { expression {!map.skipByAppProperties} }  
