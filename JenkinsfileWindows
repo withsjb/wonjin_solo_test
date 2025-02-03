@@ -662,14 +662,20 @@ stage("Update Test Plan Description") {
                 // Jira 이슈 업데이트
                 updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
 
-            } catch (error) {  
-                def errorResponse = error.getResponseContent() ?: "Unknown error"
-                println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
+            } catch (Exception error) {  
+                // 예외가 HttpResponseException인지 확인하고 응답을 처리
+                if (error instanceof HttpResponseException) {
+                    def errorResponse = error.getResponseContent() ?: "Unknown error"
+                    println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
+                } else {
+                    println "Warning: Failed to update Test Plan description: ${error.message}"
+                }
                 error.printStackTrace()
             }  
         }  
     }  
 }
+
 
 
         // stage("Zip file transfer") {
