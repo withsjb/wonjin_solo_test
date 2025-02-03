@@ -665,6 +665,7 @@ stage("Update Test Plan Description") {
             } catch (error) {  
                 def errorResponse = error.getResponseContent() ?: "Unknown error"
                 println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
+                error.printStackTrace()
             }  
         }  
     }  
