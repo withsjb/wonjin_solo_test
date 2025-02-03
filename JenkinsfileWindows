@@ -575,8 +575,6 @@ pipeline {
         }
         
 
-import groovy.json.JsonOutput
-
 stage("Update Test Plan Description") {  
     when { expression {!map.skipByAppProperties} }  
     agent { label "${map.current_node}" }  
