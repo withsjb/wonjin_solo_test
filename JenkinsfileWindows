@@ -1,6 +1,8 @@
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import org.apache.http.HttpResponseException
+
 def map = [:]
 pipeline {
     agent {
