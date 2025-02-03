@@ -575,6 +575,8 @@ pipeline {
         }
         
 
+import groovy.json.JsonOutput
+
 stage("Update Test Plan Description") {  
     when { expression {!map.skipByAppProperties} }  
     agent { label "${map.current_node}" }  
@@ -643,23 +645,33 @@ stage("Update Test Plan Description") {
                     ]
                 ]
 
-                // 기존 설명 가져오기
-                def existingDescription = map.issue.data.fields.description ?: ""
-                def payload = [  
-                    fields: [  
-                        description: descriptionPayload  
-                    ]  
+                // 디버그: payload 확인
+                println "Payload to be sent to Jira:"
+                println JsonOutput.prettyPrint(JsonOutput.toJson(descriptionPayload))
+
+                def payload = [
+                    update: [
+                        description: [
+                            [set: descriptionPayload]
+                        ]
+                    ]
                 ]
+
+                // 디버그: 최종 payload 출력
+                println "Final Payload for Jira Update:"
+                println JsonOutput.prettyPrint(JsonOutput.toJson(payload))
 
                 // Jira 이슈 업데이트
                 updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
 
             } catch (error) {  
-                println "Warning: Failed to update Test Plan description: ${error.message}"  
+                def errorResponse = error.getResponseContent() ?: "Unknown error"
+                println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
             }  
         }  
     }  
 }
+
 
         // stage("Zip file transfer") {
         //     steps {
