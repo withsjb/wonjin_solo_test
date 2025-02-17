@@ -614,7 +614,6 @@ pipeline {
 
 
 
-
         stage("Zip file transfer") {
             steps {
                 script {
