@@ -423,7 +423,7 @@ pipeline {
                                     isPassed = false
 
                                     errorreason = errordescrit(after.error_message)
-                                    println "after errorreason --> ${errorreason}"
+                                    // println "after errorreason --> ${errorreason}"
                                     
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
                                         "Defect of test '${currentIssue}'",
