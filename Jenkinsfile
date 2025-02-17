@@ -597,7 +597,7 @@ pipeline {
         script {
             def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
             def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
-            def sourceJson = 'target/cucumber.json'  // 결과 JSON 파일 경로
+            def sourceJson = '/cucumber.json'  // 결과 JSON 파일 경로
             def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
 
             // 디렉토리 생성 및 파일 복사
