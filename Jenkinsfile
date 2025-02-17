@@ -592,7 +592,8 @@ pipeline {
             } 
         }
 
-      steps {
+       stage("Copy cucumber.json") {
+    steps {
     script {
         def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
         def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
@@ -610,6 +611,8 @@ pipeline {
             echo "Cucumber JSON file copied to: ${destinationFile}"
         """
     }
+}
+
 }
 
 
