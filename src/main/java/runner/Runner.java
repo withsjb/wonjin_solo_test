@@ -32,8 +32,8 @@ import static utils.AndroidManager.copyJsonFile;
 )
 public class Runner {
     static String dateOnly = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-    private static final String CUCUMBER_JSON = "target/cucumber.json";
-    private static final String CUCUMBER_DAY_JSON = "target/target_"+ dateOnly +"/cucumber_" + dateOnly + ".json"; // 날짜만 포함된 결과 파일
+    private static final String CUCUMBER_JSON = "/cucumber.json";
+    private static final String CUCUMBER_DAY_JSON = "/target_"+ dateOnly +"/cucumber_" + dateOnly + ".json"; // 날짜만 포함된 결과 파일
 
     @AfterClass
     public static void uploadReport(){
