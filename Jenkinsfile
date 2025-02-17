@@ -592,23 +592,26 @@ pipeline {
             } 
         }
 
-       stage("Copy cucumber.json") {
-    steps {
-        script {
-            def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
-            def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
-            def sourceJson = '/cucumber.json'  // 결과 JSON 파일 경로
-            def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
+      steps {
+    script {
+        def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
+        def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
+        def sourceJson = '/Users/sonjinbin/jenkins/T583/workspace/wongjin_solo_test@2/cucumber.json'  // 결과 JSON 파일 경로
+        def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
 
-            // 디렉토리 생성 및 파일 복사
-            sh """
-                mkdir -p ${destinationDir}
-                cp ${sourceJson} ${destinationFile}
-                echo "Cucumber JSON file copied to: ${destinationFile}"
-            """
-        }
+        // 경로 출력 (디버깅 용)
+        echo "Source JSON file: ${sourceJson}"
+        echo "Destination file: ${destinationFile}"
+
+        // 디렉토리 생성 및 파일 복사
+        sh """
+            mkdir -p ${destinationDir}
+            cp ${sourceJson} ${destinationFile}
+            echo "Cucumber JSON file copied to: ${destinationFile}"
+        """
     }
 }
+
 
 
 
