@@ -395,7 +395,7 @@ pipeline {
                                     isPassed = false
 
                                     
-                                    errorreason = errordescrit(before.error_message)
+                                    // errorreason = errordescrit(before.error_message)
                                     println "befor errorreason --> ${errorreason}"
                                     
                                     // ! create defect issue 
@@ -422,7 +422,7 @@ pipeline {
                                     println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
                                     isPassed = false
 
-                                    errorreason = errordescrit(after.error_message)
+                                    // errorreason = errordescrit(after.error_message)
                                     // println "after errorreason --> ${errorreason}"
                                     
                                     def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
@@ -445,7 +445,7 @@ pipeline {
                                         def uiElement = extractUiElement(map.cucumber.error_message)
 
         
-                                        errorreason = errordescrit(map.cucumber.error_message, uiElement)
+                                        // errorreason = errordescrit(map.cucumber.error_message, uiElement)
                                         
                                         println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
                                         
