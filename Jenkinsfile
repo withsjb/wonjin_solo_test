@@ -595,6 +595,7 @@ pipeline {
        stage("Copy cucumber.json") {
     steps {
     script {
+        println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
         def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
         def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
         def sourceJson = '/Users/sonjinbin/jenkins/T583/workspace/wongjin_solo_test@2/cucumber.json'  // 결과 JSON 파일 경로
@@ -616,56 +617,19 @@ pipeline {
 }
 
 
+stage('Compile and Run Test Report Uploader') {
+    steps {
+        script {
+            println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
+            // Java 파일 컴파일
+            sh "javac src/main/java/utils/testreportuploader.java"
 
-        stage("Zip file transfer") {
-            steps {
-                script {
-                    // ! 아래 jenkins_server, jenkins_server_port는 Jenkins Web에서 Global variables로 작성할 수 있음. 
-                    // ! remote map은 SSH Steps 이라는 Jenkins plugin을 사용하는 방식임 아래처럼 작성해줘야함
-                    // def remote = [:]
-                    // remote.name = "${jenkins_server}"
-                    // remote.host = "${jenkins_server}"
-                    // remote.port = jenkins_server_port as int
-                    // remote.user = TBELL_BACKUP_AUTH_USR
-                    // remote.password = TBELL_BACKUP_AUTH_PSW
-                    // remote.allowAnyHosts = true
-
-                    // ! Jenkins Server 내 Plugin에 접근하여 빌드 ID에 따라 생성되는 cucumber report를 JIRA Issue (Tets Plan/Run)에 올려야 함. 
-                    sh("cd /Users/sonjinbin/.jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip")
-                    // sshCommand remote: remote, command: "cd /var/lib/jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u $TBELL_JIRA_CWCHOI_USR:$TBELL_JIRA_CWCHOI_PSW -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip"
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            script {
-                // ! 아래는 jenkins build가 어떻게 끝나든 무조건 test plan/run issue의 'Job Run No' field의 값에 jenkins build id를 넣어줌
-                def payload = [
-                    "fields": [
-                        "${map.jira.job_link}": "#${BUILD_ID}"
-                    ]
-                ]
-                payload = JsonOutput.toJson(payload)
-                updateIssue(map.jira.base_url, map.jira.auth, payload, JIRA_ISSUE_KEY)
-            }
-        }
-
-        failure {
-            script {
-                try {
-                    // ! pipeline을 실행하면서 에러가 나서 fail로 떨어지면 무조건 jira plan/run issue의 status를 fail로 처리
-                    transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-
-                    // ! try catch로 감싼 이유는 이미 status가 fail일 수 있기 때문에 이미 fail인 상태면 처리
-                } catch (RuntimeException) {
-                    println "젠장 오류가 났잖아"
-                }
-            }
+            // 컴파일된 클래스 파일 실행 (클래스 파일이 src/main/java/utils에 직접 저장되지 않으므로, target/classes 경로로 지정)
+            sh "java -cp target/classes utils.testreportuploader"
         }
     }
 }
+
 
 // * methods * //
 
