@@ -592,6 +592,24 @@ pipeline {
             } 
         }
 
+        stage("Copy cucumber.json") {
+    steps {
+        script {
+            def sourceJson = 'target/cucumber.json'  // 결과 JSON 파일 경로
+            def destinationDir = 'target/target_${new Date().format("yyyy-MM-dd")}'  // 날짜별 폴더
+            def destinationFile = "${destinationDir}/cucumber_${new Date().format("yyyy-MM-dd")}.json"
+
+            // 디렉토리 생성 및 파일 복사
+            sh """
+                mkdir -p ${destinationDir}
+                cp ${sourceJson} ${destinationFile}
+                echo "Cucumber JSON file copied to: ${destinationFile}"
+            """
+        }
+    }
+}
+
+
         stage("Zip file transfer") {
             steps {
                 script {
