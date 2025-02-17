@@ -15,8 +15,11 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -364,6 +367,64 @@ public class AndroidManager {
             System.out.println("An error occurred while finding elements by text: " + e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+
+    public static void copyJsonFile(String sourceFilePath, String destinationFilePath) throws IOException {
+        File sourceFile = new File(sourceFilePath);
+        File destinationFile = new File(destinationFilePath);
+        if (destinationFile.exists()) {
+            System.out.println("복사 성공");
+            destinationFile.delete(); // 기존 파일 삭제
+        }
+        Files.copy(sourceFile.toPath(), destinationFile.toPath());
+    }
+
+
+    /**
+     * 원하는 Xpath를 찾아 특정 위치로 스와이프하는 메소드
+     * @param text 찾고자 하는 요소의 Xpath
+     * @param targetY 요소를 위치시키고자 하는 Y 좌표 (화면 상단으로부터의 픽셀 값)
+     * @return 찾은 요소를 특정 위치로 스와이프한 후의 WebElement, 못 찾으면 null
+     */
+    public static WebElement findXpathAndSwipeToPosition(String text, int targetY) {
+        String dynamicXpath = "(//android.widget.TextView[@text='" + text + "'])[2]";
+        log.info("동적 XPath 생성: {}", dynamicXpath);
+
+        WebElement element = null;
+        try {
+            // 2. 생성한 XPath를 이용해 요소를 찾습니다.
+            element = AndroidManager.getDriver().findElement(By.xpath(dynamicXpath));
+        } catch (Exception e) {
+            log.warn("동적 XPath '{}'에 해당하는 요소를 찾지 못했습니다.", dynamicXpath);
+        }
+
+        // 3. 요소가 존재하면 해당 요소의 위치를 가져와서 스와이프 진행
+        if (element != null) {
+            try {
+                // 요소의 현재 위치 (Y 좌표) 확인
+                Point location = element.getLocation();
+                int currentY = location.getY();
+                int centerX = AndroidManager.getDriver().manage().window().getSize().width / 2;
+                int diffY = currentY - targetY;
+
+                // 4. 현재 위치와 목표 위치의 차이가 10 이상이면 스와이프를 진행
+                if (Math.abs(diffY) > 10) {
+                    log.info("요소를 Y 좌표 {}에서 {}로 스와이프 시도합니다.", currentY, targetY);
+                    // gradualSwipe 메서드: 현재 Y에서 targetY까지 점진적으로 스와이프합니다.
+                    gradualSwipe(currentY, targetY, centerX);
+
+                    // 5. 스와이프 후, 요소 위치를 다시 확인합니다.
+                    element = AndroidManager.getDriver().findElement(By.xpath(dynamicXpath));
+                } else {
+                    log.info("요소가 이미 목표 위치({})에 있습니다.", targetY);
+                }
+            } catch (Exception e) {
+                log.error("요소 위치 조정 중 오류 발생: ", e);
+                return null;
+            }
+        }
+        return element;
     }
 
 }
