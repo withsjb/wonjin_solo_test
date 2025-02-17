@@ -592,12 +592,13 @@ pipeline {
             } 
         }
 
-        stage("Copy cucumber.json") {
+       stage("Copy cucumber.json") {
     steps {
         script {
-            def sourceJson = '/cucumber.json'  // 결과 JSON 파일 경로
-            def destinationDir = '/target_${new Date().format("yyyy-MM-dd")}'  // 날짜별 폴더
-            def destinationFile = "${destinationDir}/cucumber_${new Date().format("yyyy-MM-dd")}.json"
+            def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
+            def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
+            def sourceJson = 'target/cucumber.json'  // 결과 JSON 파일 경로
+            def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
 
             // 디렉토리 생성 및 파일 복사
             sh """
@@ -608,6 +609,7 @@ pipeline {
         }
     }
 }
+
 
 
         stage("Zip file transfer") {
