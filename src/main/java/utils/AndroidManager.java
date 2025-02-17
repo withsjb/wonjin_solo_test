@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -380,6 +381,7 @@ public class AndroidManager {
         Files.copy(sourceFile.toPath(), destinationFile.toPath());
     }
 
+    //여기부터 추가
 
     /**
      * 원하는 Xpath를 찾아 특정 위치로 스와이프하는 메소드
@@ -427,4 +429,14 @@ public class AndroidManager {
         return element;
     }
 
+
+    public static HttpURLConnection connect (String urlString, String method, String username, String apiToken) throws IOException {
+        URL url = new URL(urlString);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod(method);
+        connection.setRequestProperty("Authorization", "Basic " + java.util.Base64.getEncoder().encodeToString((username + ":" + apiToken).getBytes()));
+        connection.setRequestProperty("Content-Type", "application/json");
+        return connection;
+
+    }
 }
