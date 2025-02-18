@@ -625,7 +625,7 @@ stage('Compile and Run Test Report Uploader') {
 
                     // Maven exec 플러그인을 사용하여 특정 클래스 실행
                     // 여기서 'utils.testreportuploader' 클래스를 지정
-                    sh "mvn exec:java -Dexec.mainClass='utils.testreportuploader'"
+                    sh "mvn exec:java -Dexec.mainClass='utils.TestReportUploader'"
                 }
             }
 }
