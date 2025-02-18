@@ -294,7 +294,7 @@ pipeline {
                     def KILL_OUTPUT = bat script: "taskkill /F /IM ${pID}", returnStdout: true
                     echo KILL_OUTPUT
 
-                    // ★ 여기부터 JSON 병합 코드 추가 ★
+                    // ★ 여기부터 JSON 병합 코드 수정 ★
                     // 각 테스트 케이스별 JSON 결과 파일들을 하나의 JSON 배열로 병합
 
                     def combinedResults = []
@@ -304,16 +304,21 @@ pipeline {
                         if (fileExists(filePath)) {
                             def content = readFile(filePath)
                             def jsonData = new JsonSlurper().parseText(content)
+
+                            // LazyMap을 일반 Map으로 변환하여 처리
                             if (jsonData instanceof List) {
-                                combinedResults.addAll(jsonData)
+                                combinedResults.addAll(jsonData.collect { it.toMap() })
                             } else {
-                                combinedResults << jsonData
+                                combinedResults << jsonData.toMap()
                             }
                         } else {
                             echo "File not found: ${filePath}"
                         }
                     }
+
+                    // JSON 직렬화 후 저장
                     def combinedJson = JsonOutput.prettyPrint(JsonOutput.toJson(combinedResults))
+
                     // target 디렉토리가 없으면 생성
                     if (!fileExists("target")) {
                         bat "mkdir target"
@@ -329,6 +334,7 @@ pipeline {
         }
     }
 }
+
 
         stage("Analysis test result") {
             when { expression {!map.skipByAppProperties} }
