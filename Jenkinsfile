@@ -621,7 +621,7 @@ stage('Compile and Run Test Report Uploader') {
     steps {
         script {
             // Java 파일 컴파일
-            sh "javac src/main/java/utils/testreportuploader.java"
+            sh "javac /src/main/java/utils/testreportuploader.java"
 
             // 컴파일된 클래스 파일 실행 (클래스 파일이 src/main/java/utils에 직접 저장되지 않으므로, target/classes 경로로 지정)
             sh "java -cp target/classes utils.testreportuploader"
