@@ -568,113 +568,13 @@ pipeline {
         }
         
 
-stage("Update Test Plan Description") {  
-    when { expression {!map.skipByAppProperties} }  
-    agent { label "${map.current_node}" }  
-    steps {  
-        script {  
-            println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"  
-            
-            try {  
-                // 현재 날짜와 시간
-                def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
-                
-                // 스테이지 결과를 map에 저장
-                def failedCount = map.cucumber.defect_info.size()  
-                def totalCount = map.testcases.size()  
-
-                // 테이블 데이터 생성
-                def tableRows = [
-                    [
-                        ["text": "테스트 날짜"], ["text": currentDate]
-                    ],
-                    [
-                        ["text": "총 시나리오 수"], ["text": "${totalCount}"]
-                    ],
-                    [
-                        ["text": "실패 시나리오 수", "color": "#d32f2f"], ["text": "${failedCount}"]
-                    ]
-                ].collect { row ->
-                    return [
-                        "type": "tableRow",
-                        "content": row.collect { cell ->
-                            def textData = [
-                                "type": "text", 
-                                "text": cell.text
-                            ]
-                            if (cell.color) {
-                                textData["marks"] = [
-                                    ["type": "textColor", "attrs": ["color": cell.color]]
-                                ]
-                            }
-                            [
-                                "type": "tableCell",
-                                "content": [
-                                    [
-                                        "type": "paragraph",
-                                        "content": [textData]
-                                    ]
-                                ]
-                            ]
-                        }
-                    ]
-                }
-
-                def descriptionPayload = [
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        [
-                            "type": "table",
-                            "attrs": [
-                                "isNumberColumnEnabled": false,
-                                "layout": "center",
-                                "width": 900
-                            ],
-                            "content": tableRows
-                        ]
-                    ]
-                ]
-
-                // 디버그: payload 확인
-                println "Payload to be sent to Jira:"
-                println JsonOutput.prettyPrint(JsonOutput.toJson(descriptionPayload))
-
-                def payload = [
-                    update: [
-                        description: [
-                            [set: descriptionPayload]
-                        ]
-                    ]
-                ]
-
-                // 디버그: 최종 payload 출력
-                println "Final Payload for Jira Update:"
-                println JsonOutput.prettyPrint(JsonOutput.toJson(payload))
-
-                // Jira 이슈 업데이트
-                updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
-
-            } catch (Exception error) {  
-                // 예외가 HttpResponseException인지 확인하고 응답을 처리
-                if (error instanceof HttpResponseException) {
-                    def errorResponse = error.getResponseContent() ?: "Unknown error"
-                    println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
-                } else {
-                    println "Warning: Failed to update Test Plan description: ${error.message}"
-                }
-                error.printStackTrace()
-            }  
-        }  
-    }  
-}
-  stage("Copy cucumber.json") {
+ stage("Copy cucumber.json") {
     steps {
     script {
         println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
         def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
         def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
-        def sourceJson = 'C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2cucumber.json'  // 결과 JSON 파일 경로
+        def sourceJson = '/Users/sonjinbin/jenkins/T583/workspace/wongjin_solo_test@2/cucumber.json'  // 결과 JSON 파일 경로
         def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
 
         // 경로 출력 (디버깅 용)
@@ -706,6 +606,7 @@ stage('Compile and Run Test Report Uploader') {
                 }
             }
 }
+
     }
     post {
         always {
