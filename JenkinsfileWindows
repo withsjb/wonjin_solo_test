@@ -576,7 +576,7 @@ pipeline {
             def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
             def destinationDir = "target_${dateFormatted}"          // 날짜가 포함된 디렉토리명
             // 경로 확인: 파일 경로에 디렉토리 구분자(\\)가 올바르게 들어가 있는지 확인하세요.
-            def sourceJson = 'C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2\\cucumber.json'
+            def sourceJson = "./a_features/${key}/${map.cucumber.report_json}" 
             def destinationFile = "${destinationDir}\\cucumber_${dateFormatted}.json"
 
             // 경로 출력 (디버깅 용)
