@@ -570,43 +570,42 @@ pipeline {
 
  stage("Copy cucumber.json") {
     steps {
-    script {
-        println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
-        println map.cucumber.report_json
-        def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
-        def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
-        def sourceJson = 'C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2cucumber.json'  // 결과 JSON 파일 경로
-        def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
+        script {
+            println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
+            println map.cucumber.report_json
+            def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
+            def destinationDir = "target_${dateFormatted}"          // 날짜가 포함된 디렉토리명
+            // 경로 확인: 파일 경로에 디렉토리 구분자(\\)가 올바르게 들어가 있는지 확인하세요.
+            def sourceJson = 'C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2\\cucumber.json'
+            def destinationFile = "${destinationDir}\\cucumber_${dateFormatted}.json"
 
-        // 경로 출력 (디버깅 용)
-        echo "Source JSON file: ${sourceJson}"
-        echo "Destination file: ${destinationFile}"
+            // 경로 출력 (디버깅 용)
+            echo "Source JSON file: ${sourceJson}"
+            echo "Destination file: ${destinationFile}"
 
-        // 디렉토리 생성 및 파일 복사
-        sh """
-            mkdir -p ${destinationDir}
-            cp ${sourceJson} ${destinationFile}
-            echo "Cucumber JSON file copied to: ${destinationFile}"
-        """
+            // 디렉토리 생성 및 파일 복사 (Windows 명령어 사용)
+            bat """
+                if not exist ${destinationDir} mkdir ${destinationDir}
+                copy /Y "${sourceJson}" "${destinationFile}"
+                echo Cucumber JSON file copied to: ${destinationFile}
+            """
+        }
     }
 }
 
-}
-
-
 stage('Compile and Run Test Report Uploader') {
     steps {
-                script {
-                    println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
-                    // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
-                    sh "mvn clean compile"
+        script {
+            println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
+            // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
+            bat "mvn clean compile"
 
-                    // Maven exec 플러그인을 사용하여 특정 클래스 실행
-                    // 여기서 'utils.testreportuploader' 클래스를 지정
-                    sh "mvn exec:java -Dexec.mainClass='utils.TestReportUploader'"
-                }
-            }
+            // Maven exec 플러그인을 사용하여 특정 클래스 실행
+            bat "mvn exec:java -Dexec.mainClass=utils.TestReportUploader"
+        }
+    }
 }
+
 
     }
     post {
