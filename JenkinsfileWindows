@@ -634,7 +634,7 @@ stage('Compile and Run Test Report Uploader') {
             }
         }
     }
-}
+
 // * methods * //
 // ? Custom exception method
 def jenkinsException(java.util.Map map, String error) {
@@ -1055,4 +1055,6 @@ def extractUiElement(String errorMessage) {
     }
 
     return "알 수 없는 UI 요소"
+}
+
 }
