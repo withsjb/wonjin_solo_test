@@ -318,7 +318,7 @@ pipeline {
                     if (!fileExists("target")) {
                         bat "mkdir target"
                     }
-                    writeFile file: "target/cucumber.json", text: combinedJson
+                    writeFile file: ".\\cucumber.json", text: combinedJson
                     echo "Merged JSON file created at target/cucumber.json"
                     // ★ JSON 병합 코드 끝 ★
 
@@ -578,8 +578,8 @@ pipeline {
 
             // 각 테스트 케이스(key)에 대해 JSON 파일 복사
             map.testcases.each { key, value ->
-                def sourceJson = ".\\a_features\\${key}\\${map.cucumber.report_json}"
-               def destinationFile = ".\\a_features\\${destinationDir}\\cucumber_${dateFormatted}.json"
+                def sourceJson = ".\\${map.cucumber.report_json}"
+               def destinationFile = ".\\${destinationDir}\\cucumber_${dateFormatted}.json"
 
                 // def destinationFile = "${destinationDir}\\cucumber_${key}_${dateFormatted}.json"
 
