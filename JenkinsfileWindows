@@ -193,146 +193,145 @@ pipeline {
             }
         }
         stage("Run automation testing") {
-            when { expression {!map.skipByAppProperties} }
-            // ! agent는 등록한 slave에서만 해당 stage를 실행시킬 수 있다는 의미
-            agent{
-                label "${map.current_node}"
-            }
-            steps {
-                dir("${map.current_path}") {
-                    script {
-                        println "✅✅✅✅ Run automation testing ✅✅✅✅"
-                        println "source location ==> ${map.current_path}"
-                        bat ("echo $ANDROID_HOME")
+    when { expression { !map.skipByAppProperties } }
+    agent {
+        label "${map.current_node}"
+    }
+    steps {
+        dir("${map.current_path}") {
+            script {
+                println "✅✅✅✅ Run automation testing ✅✅✅✅"
+                println "source location ==> ${map.current_path}"
+                bat("echo $ANDROID_HOME")
+                try {
+                    // Appium 서버 시작 등 초기 설정
+                    bat script: "adb devices", returnStdout: true
+                    bat "start /B appium --address ${APPIUM_ADDR} --port ${APPIUM_PORT}"
+                    sleep 2
+                    println "current node: " + map.current_node
+
+                    // 테스트 케이스 실행 및 실패한 시나리오 저장
+                    def failedScenarios = [:]
+                    map.testcases.each { key, value ->
                         try {
-                            // ! Start appium server
-                            // ! Real device로 테스트하기 때문에 0.0.0.0 으로 실행시켜야 한다.
-                            // ! background로 실행하기 위해 뒤에 &
-                            // ! 실행 후 10초정도 대기
-                            // * returnStdout: true 옵션을 사용하면 해당 명령어의 실행 결과를 문자열로 반환. 기본값은 false이며, 이 경우 실행 결과를 콘솔 출력으로 표시
-                            bat script: "adb devices", returnStdout: true
-                            // bat script: "adb kill-server", returnStdout: true
-                            // bat script: "adb start-server", returnStdout: true
-
-                            bat "start /B appium --address ${APPIUM_ADDR} --port ${APPIUM_PORT}"
-                            sleep 2
-
-                            println "current node: " + map.current_node
-
-            
-                            // *실패한 시나리오를 저장할 맵 선언 추가_24.07.05
-                            def failedScenarios = [:]
-
-
-                            // * 각 테스트 케이스 실행 함수
-                            map.testcases.each { key, value ->
-                                try {
-                                    // ! Run cucumber test command line
-                                    // bat encoding: 'UTF-8', script: "mvn exec:java -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8 -Dproject.reporting.outputEncoding=UTF-8 -Dexec.mainClass=io.cucumber.core.cli.Main -Dexec.args=\"${map.cucumber.feature_path}/${key} --glue ${map.cucumber.glue} --plugin json:./a_features/${key}/${map.cucumber.report_json} --plugin progress:./a_features/${key}/${map.cucumber.running_progress} --publish --plugin pretty --plugin html:./a_features/${key}/${map.cucumber.cucumber_html}\"", returnStdout: false
-                                    bat script: "mvn exec:java -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8 -Dproject.reporting.outputEncoding=UTF-8 -Dexec.mainClass=io.cucumber.core.cli.Main -Dexec.args=\"${map.cucumber.feature_path}/${key} --glue ${map.cucumber.glue} --plugin json:./a_features/${key}/${map.cucumber.report_json} --plugin progress:./a_features/${key}/${map.cucumber.running_progress} --publish --plugin pretty --plugin html:./a_features/${key}/${map.cucumber.cucumber_html}\"", returnStdout: false
-                                } catch (error) {
-                                    // println error
-                                    // 처음 실행에서 실패한 시나리오 저장
-                                    failedScenarios[key] = value
-                                    println "Initial run failed for scenario: ${key}"
-                                }
-                            }
-                            // *실패한 시나리오 수 출력
-                            println "Number of failed scenarios: ${failedScenarios.size()}"
-
-                            // *실패한 시나리오가 지정한 갯수 미만일 경우 재실행
-                            if (failedScenarios.size() < 30) {
-                                println "✅✅✅✅ 재시작 failed scenarios ✅✅✅✅"
-
-                                try {
-
-                                    // 성능 측정 시작
-                                    println "✅✅✅✅ logCat 실행 ✅✅✅✅"
-            
-                                    // 현재 노드 출력  
-                                    println "current node: ${map.current_node}"  
-
-                                    // 기기별 app.properties 경로 설정  
-                                    def appPropertiesPath = "${map.current_path}\\src\\main\\resources\\app.properties"  
-                                    echo "Using app.properties from: ${appPropertiesPath}"  
-
-                                    // app.properties 파일 읽기  
-                                    def propsContent = readFile(appPropertiesPath)  
-                                    def props = [:]  
-
-                                    // content를 줄 단위로 나누고 키-값 쌍으로 파싱  
-                                    propsContent.split('\n').each { line ->  
-                                        if (line && !line.startsWith('#')) { // 주석 제거  
-                                            def splitLine = line.split('=')  
-                                            if (splitLine.size() == 2) {  
-                                                props[splitLine[0].trim()] = splitLine[1].trim()  
-                                            }  
-                                        }  
-                                    }  
-
-                                    // deviceName과 udid 가져오기  
-                                    def deviceName = props['deviceName']  
-                                    def udid = props['udid']  
-                                    
-                                    echo "Device Name: ${deviceName}"  
-                                    echo "UDID: ${udid}"
-                                    
-                                     // 로그캣 파일 이름 설정 (기기 이름과 빌드 ID 사용)
-                                    def logFileName = "logcat_${deviceName.replaceAll(" ", "_")}_${BUILD_ID}.txt"
-                                    
-                                    // 이전 로그캣 파일 삭제
-                                    if (fileExists(logFileName)) {
-                                        bat "del ${logFileName}"
-                                    }
-                                    
-                                    // 백그라운드에서 로그캣 시작 (특정 udid 기기에서 실행)
-                                    bat "start /B adb -s ${udid} logcat > ${logFileName}"
-
-                                    failedScenarios.each { key, value ->
-                                    try {
-
-                                        // *해당 시나리오 재실행
-                                        bat script: "mvn exec:java -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8 -Dproject.reporting.outputEncoding=UTF-8 -Dexec.mainClass=io.cucumber.core.cli.Main -Dexec.args=\"${map.cucumber.feature_path}/${key} --glue ${map.cucumber.glue} --plugin json:./a_features/${key}/${map.cucumber.report_json} --plugin progress:./a_features/${key}/${map.cucumber.running_progress} --publish --plugin pretty --plugin html:./a_features/${key}/${map.cucumber.cucumber_html}\"", returnStdout: false
-                                    } catch (error) {
-                                        println "Retry failed for scenario: ${key}"
-                                    }
-                                 }
-
-                                 // 로그캣 프로세스 중지 (특정 udid 기기에 대해)
-                                bat "adb -s ${udid} shell pkill -f logcat"
-
-                                
-                                // 로그캣 파일을 아티팩트로 저장
-                                archiveArtifacts artifacts: "${logFileName}", fingerprint: true, allowEmptyArchive: true
-                                
-                                echo "Logcat 파일 '${logFileName}'을 아티팩트로 저장했습니다."
-                            
-                                } catch (Exception e) {
-                                    echo "로그캣 처리 중 오류 발생: ${e.message}"
-                                    echo "로그캣 오류가 발생했지만, 테스트 및 빌드 프로세스는 계속 진행됩니다."
-                                }
-    
-                            } else {
-                                // *실패한 시나리오가 지정한 갯수 이상인 경우 재실행을 건너뜀
-                                println "Skipping retry as number of failed scenarios is 30 or more."
-                            }    
-
-                            // ? sh(shell script) -> bat(windows에서만)
-                            OUTPUT = bat script: "netstat -aon | findstr 0.0.0.0:${APPIUM_PORT} | findstr LISTENING", returnStdout: true
-                            println OUTPUT
-                            println OUTPUT.substring(OUTPUT.length() - 9)
-                            pID = OUTPUT.substring(OUTPUT.length() - 9)
-                            sleep 1
-
-                            KILL_OUTPUT = bat script: "taskkill /F /IM ${pID}", returnStdout: true
-                            echo KILL_OUTPUT
-                        } catch(error) {
-                            throwableException(map, error)
+                            bat script: "mvn exec:java -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8 " +
+                                       "-Dproject.reporting.outputEncoding=UTF-8 -Dexec.mainClass=io.cucumber.core.cli.Main " +
+                                       "-Dexec.args=\"${map.cucumber.feature_path}/${key} --glue ${map.cucumber.glue} " +
+                                       "--plugin json:./a_features/${key}/${map.cucumber.report_json} " +
+                                       "--plugin progress:./a_features/${key}/${map.cucumber.running_progress} " +
+                                       "--publish --plugin pretty --plugin html:./a_features/${key}/${map.cucumber.cucumber_html}\"",
+                                returnStdout: false
+                        } catch (error) {
+                            failedScenarios[key] = value
+                            println "Initial run failed for scenario: ${key}"
                         }
                     }
+                    println "Number of failed scenarios: ${failedScenarios.size()}"
+
+                    // 실패한 시나리오 재실행 (갯수가 30 미만인 경우)
+                    if (failedScenarios.size() < 30) {
+                        println "✅✅✅✅ 재시작 failed scenarios ✅✅✅✅"
+                        try {
+                            println "✅✅✅✅ logCat 실행 ✅✅✅✅"
+                            println "current node: ${map.current_node}"
+                            def appPropertiesPath = "${map.current_path}\\src\\main\\resources\\app.properties"
+                            echo "Using app.properties from: ${appPropertiesPath}"
+                            def propsContent = readFile(appPropertiesPath)
+                            def props = [:]
+                            propsContent.split('\n').each { line ->
+                                if (line && !line.startsWith('#')) {
+                                    def splitLine = line.split('=')
+                                    if (splitLine.size() == 2) {
+                                        props[splitLine[0].trim()] = splitLine[1].trim()
+                                    }
+                                }
+                            }
+                            def deviceName = props['deviceName']
+                            def udid = props['udid']
+                            echo "Device Name: ${deviceName}"
+                            echo "UDID: ${udid}"
+                            
+                            // 로그캣 파일 설정 및 실행
+                            def logFileName = "logcat_${deviceName.replaceAll(' ', '_')}_${BUILD_ID}.txt"
+                            if (fileExists(logFileName)) {
+                                bat "del ${logFileName}"
+                            }
+                            bat "start /B adb -s ${udid} logcat > ${logFileName}"
+
+                            // 실패한 시나리오 재실행
+                            failedScenarios.each { key, value ->
+                                try {
+                                    bat script: "mvn exec:java -Dfile.encoding=UTF-8 -Dproject.build.sourceEncoding=UTF-8 " +
+                                               "-Dproject.reporting.outputEncoding=UTF-8 -Dexec.mainClass=io.cucumber.core.cli.Main " +
+                                               "-Dexec.args=\"${map.cucumber.feature_path}/${key} --glue ${map.cucumber.glue} " +
+                                               "--plugin json:./a_features/${key}/${map.cucumber.report_json} " +
+                                               "--plugin progress:./a_features/${key}/${map.cucumber.running_progress} " +
+                                               "--publish --plugin pretty --plugin html:./a_features/${key}/${map.cucumber.cucumber_html}\"",
+                                        returnStdout: false
+                                } catch (error) {
+                                    println "Retry failed for scenario: ${key}"
+                                }
+                            }
+                            
+                            // 로그캣 종료 및 아티팩트 저장
+                            bat "adb -s ${udid} shell pkill -f logcat"
+                            archiveArtifacts artifacts: "${logFileName}", fingerprint: true, allowEmptyArchive: true
+                            echo "Logcat 파일 '${logFileName}'을 아티팩트로 저장했습니다."
+                        } catch (Exception e) {
+                            echo "로그캣 처리 중 오류 발생: ${e.message}"
+                            echo "로그캣 오류가 발생했지만, 테스트 및 빌드 프로세스는 계속 진행됩니다."
+                        }
+                    } else {
+                        println "Skipping retry as number of failed scenarios is 30 or more."
+                    }
+
+                    // Appium 관련 포트 종료 처리
+                    def OUTPUT = bat script: "netstat -aon | findstr 0.0.0.0:${APPIUM_PORT} | findstr LISTENING", returnStdout: true
+                    println OUTPUT
+                    println OUTPUT.substring(OUTPUT.length() - 9)
+                    def pID = OUTPUT.substring(OUTPUT.length() - 9)
+                    sleep 1
+                    def KILL_OUTPUT = bat script: "taskkill /F /IM ${pID}", returnStdout: true
+                    echo KILL_OUTPUT
+
+                    // ★ 여기부터 JSON 병합 코드 추가 ★
+                    // 각 테스트 케이스별 JSON 결과 파일들을 하나의 JSON 배열로 병합
+                    import groovy.json.JsonSlurper
+                    import groovy.json.JsonOutput
+
+                    def combinedResults = []
+                    map.testcases.each { key, value ->
+                        def filePath = "./a_features/${key}/${map.cucumber.report_json}"
+                        echo "Processing JSON file: ${filePath}"
+                        if (fileExists(filePath)) {
+                            def content = readFile(filePath)
+                            def jsonData = new JsonSlurper().parseText(content)
+                            if (jsonData instanceof List) {
+                                combinedResults.addAll(jsonData)
+                            } else {
+                                combinedResults << jsonData
+                            }
+                        } else {
+                            echo "File not found: ${filePath}"
+                        }
+                    }
+                    def combinedJson = JsonOutput.prettyPrint(JsonOutput.toJson(combinedResults))
+                    // target 디렉토리가 없으면 생성
+                    if (!fileExists("target")) {
+                        bat "mkdir target"
+                    }
+                    writeFile file: "target/cucumber.json", text: combinedJson
+                    echo "Merged JSON file created at target/cucumber.json"
+                    // ★ JSON 병합 코드 끝 ★
+
+                } catch (error) {
+                    throwableException(map, error)
                 }
             }
         }
+    }
+}
+
         stage("Analysis test result") {
             when { expression {!map.skipByAppProperties} }
             agent { label "${map.current_node}" }
@@ -581,8 +580,10 @@ pipeline {
 
             // 각 테스트 케이스(key)에 대해 JSON 파일 복사
             map.testcases.each { key, value ->
-                def sourceJson = "./a_features/${key}/${map.cucumber.report_json}"
-                def destinationFile = "${destinationDir}\\cucumber_${key}_${dateFormatted}.json"
+                def sourceJson = ".\\a_features\\${key}\\${map.cucumber.report_json}"
+               def destinationFile = ".\\a_features\\${destinationDir}\\cucumber_${dateFormatted}.json"
+
+                // def destinationFile = "${destinationDir}\\cucumber_${key}_${dateFormatted}.json"
 
                 // 경로 디버깅 출력
                 echo "Source JSON file for ${key}: ${sourceJson}"
