@@ -620,6 +620,7 @@ pipeline {
 stage('Compile and Run Test Report Uploader') {
     steps {
                 script {
+                    println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
                     // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
                     sh "mvn clean compile"
 
