@@ -124,16 +124,7 @@ pipeline {
                 dir("${map.current_path}") {
                     script {
 
-                        // def output = bat(encoding: 'UTF-8', script: "adb devices -l | findstr ${map.current_node}", returnStdout: true).trim().readLines().drop(1).join(" ")
-                        // sleep 2
-
-                        // udidIndex = output.indexOf("device", 0)
-                        // map.const.udid = output.substring(0, udidIndex)
-
-                        // if (map.const.udid == null) {
-                        //     jenkinsException(map, "Selected pad not includes SM-583 or SM-T500")
-                        // }
-                        // println "current UDID:  " + map.const.udid
+                        
                         println "✅✅✅✅ Download testcases on slave ✅✅✅✅"
                         println "testcases count --> : ${map.testcases.size()}"
                         if (!fileExists("${map.current_path}\\src\\main\\resources\\app.properties")) {
@@ -576,130 +567,45 @@ pipeline {
             }
         }
         
+  stage("Copy cucumber.json") {
+    steps {
+    script {
+        println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
+        def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
+        def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
+        def sourceJson = 'C:\\Users\\TB-NTB-223\\CICD\\SM-T583\\workspace\\wonjin_solo_test@2\\cucumber.json'  // 결과 JSON 파일 경로
+        def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
 
-stage("Update Test Plan Description") {  
-    when { expression {!map.skipByAppProperties} }  
-    agent { label "${map.current_node}" }  
-    steps {  
-        script {  
-            println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"  
-            
-            try {  
-                // 현재 날짜와 시간
-                def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
-                
-                // 스테이지 결과를 map에 저장
-                def failedCount = map.cucumber.defect_info.size()  
-                def totalCount = map.testcases.size()  
+        // 경로 출력 (디버깅 용)
+        echo "Source JSON file: ${sourceJson}"
+        echo "Destination file: ${destinationFile}"
 
-                // 테이블 데이터 생성
-                def tableRows = [
-                    [
-                        ["text": "테스트 날짜"], ["text": currentDate]
-                    ],
-                    [
-                        ["text": "총 시나리오 수"], ["text": "${totalCount}"]
-                    ],
-                    [
-                        ["text": "실패 시나리오 수", "color": "#d32f2f"], ["text": "${failedCount}"]
-                    ]
-                ].collect { row ->
-                    return [
-                        "type": "tableRow",
-                        "content": row.collect { cell ->
-                            def textData = [
-                                "type": "text", 
-                                "text": cell.text
-                            ]
-                            if (cell.color) {
-                                textData["marks"] = [
-                                    ["type": "textColor", "attrs": ["color": cell.color]]
-                                ]
-                            }
-                            [
-                                "type": "tableCell",
-                                "content": [
-                                    [
-                                        "type": "paragraph",
-                                        "content": [textData]
-                                    ]
-                                ]
-                            ]
-                        }
-                    ]
-                }
+        // 디렉토리 생성 및 파일 복사
+        sh """
+            mkdir -p ${destinationDir}
+            cp ${sourceJson} ${destinationFile}
+            echo "Cucumber JSON file copied to: ${destinationFile}"
+        """
+    }
+}
 
-                def descriptionPayload = [
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        [
-                            "type": "table",
-                            "attrs": [
-                                "isNumberColumnEnabled": false,
-                                "layout": "center",
-                                "width": 900
-                            ],
-                            "content": tableRows
-                        ]
-                    ]
-                ]
-
-                // 디버그: payload 확인
-                println "Payload to be sent to Jira:"
-                println JsonOutput.prettyPrint(JsonOutput.toJson(descriptionPayload))
-
-                def payload = [
-                    update: [
-                        description: [
-                            [set: descriptionPayload]
-                        ]
-                    ]
-                ]
-
-                // 디버그: 최종 payload 출력
-                println "Final Payload for Jira Update:"
-                println JsonOutput.prettyPrint(JsonOutput.toJson(payload))
-
-                // Jira 이슈 업데이트
-                updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
-
-            } catch (Exception error) {  
-                // 예외가 HttpResponseException인지 확인하고 응답을 처리
-                if (error instanceof HttpResponseException) {
-                    def errorResponse = error.getResponseContent() ?: "Unknown error"
-                    println "Warning: Failed to update Test Plan description: ${error.message}, response: ${errorResponse}"  
-                } else {
-                    println "Warning: Failed to update Test Plan description: ${error.message}"
-                }
-                error.printStackTrace()
-            }  
-        }  
-    }  
 }
 
 
+stage('Compile and Run Test Report Uploader') {
+    steps {
+                script {
+                    println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
+                    // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
+                    sh "mvn clean compile"
 
-        // stage("Zip file transfer") {
-        //     steps {
-        //         script {
-        //             // ! 아래 jenkins_server, jenkins_server_port는 Jenkins Web에서 Global variables로 작성할 수 있음.
-        //             // ! remote map은 SSH Steps 이라는 Jenkins plugin을 사용하는 방식임 아래처럼 작성해줘야함
-        //             // def remote = [:]
-        //             // remote.name = "${jenkins_server}"
-        //             // remote.host = "${jenkins_server}"
-        //             // remote.port = jenkins_server_port as int
-        //             // remote.user = TBELL_BACKUP_AUTH_USR
-        //             // remote.password = TBELL_BACKUP_AUTH_PSW
-        //             // remote.allowAnyHosts = true
+                    // Maven exec 플러그인을 사용하여 특정 클래스 실행
+                    // 여기서 'utils.testreportuploader' 클래스를 지정
+                    sh "mvn exec:java -Dexec.mainClass='utils.TestReportUploader'"
+                }
+            }
+}
 
-        //             // ! Jenkins Server 내 Plugin에 접근하여 빌드 ID에 따라 생성되는 cucumber report를 JIRA Issue (Tets Plan/Run)에 올려야 함.
-        //             sh("cd /server/was/.jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip")
-        //             // sshCommand remote: remote, command: "cd /var/lib/jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u $TBELL_JIRA_CWCHOI_USR:$TBELL_JIRA_CWCHOI_PSW -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip"
-        //         }
-        //     }
-        // }
-    }
     post {
         always {
             script {
@@ -1085,7 +991,7 @@ def errordescrit(String errorMessage, String uiElement){
     }
     return "오류 메시지가 제공되지 않았습니다."
 }
-
+}
 
 def geterrorReason(Throwable t, String ui, String anotherUi, int time) {
     String errorReason
