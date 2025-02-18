@@ -76,7 +76,7 @@ public class TestReportUploader {
         System.out.println("Existing Description: " + existingDescription);
 
         // 새로운 cucumber 파일 읽기
-        String jsonFilePath = "target/target_"+ dateOnly +"/cucumber_" + dateOnly + ".json";
+        String jsonFilePath = "/target_"+ dateOnly +"/cucumber_" + dateOnly + ".json";
 //        String jsonFilePath = "target/target_2025-01-07/cucumber_2025-01-07.json";
         File jsonFile = new File(jsonFilePath);
         JsonNode jsonResults = objectMapper.readTree(jsonFile);
