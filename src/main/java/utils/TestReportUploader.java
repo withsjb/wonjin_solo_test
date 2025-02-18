@@ -22,10 +22,6 @@ import java.util.zip.ZipOutputStream;
 public class TestReportUploader {
 
     static String dateOnly = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-    static String Xray_API_URL;
-    static String XRAY_API_TOKEN;
-
-    static String USER_DIR;
 
     static String JIRA_URL;
 
@@ -33,13 +29,6 @@ public class TestReportUploader {
     static String JIRA_TOKEN;
 
     static String oneonetestPlen;
-
-    static String logpath;
-    static String errorcaturepath;
-
-    static String logandimgzip;
-
-    static String mp4path;
 
     private static ZonedDateTime koreantime = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,17 +50,12 @@ public class TestReportUploader {
 
         try (InputStream input = new FileInputStream(propertiesFilePath)) {
             properties.load(input);
-            USER_DIR = properties.getProperty("user.dir");
-            Xray_API_URL = properties.getProperty("xray.api.cucumberurl");
-            XRAY_API_TOKEN = properties.getProperty("xray.api.token");
+
             JIRA_URL = properties.getProperty("jira.base.url");
             JIRA_TOKEN = properties.getProperty("jira.api.token");
             USERNAME = properties.getProperty("username");
             oneonetestPlen = properties.getProperty("11st.plen");
-            logpath = properties.getProperty("log.path");
-            errorcaturepath = properties.getProperty("errorcature.path");
-            logandimgzip = properties.getProperty("log.img.zip");
-            mp4path = properties.getProperty("mp4.path");
+
         }
     }
 
