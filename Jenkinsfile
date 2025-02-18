@@ -619,14 +619,15 @@ pipeline {
 
 stage('Compile and Run Test Report Uploader') {
     steps {
-        script {
-            // Java 파일 컴파일
-            sh "javac /src/main/java/utils/testreportuploader.java"
+                script {
+                    // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
+                    sh "mvn clean compile"
 
-            // 컴파일된 클래스 파일 실행 (클래스 파일이 src/main/java/utils에 직접 저장되지 않으므로, target/classes 경로로 지정)
-            sh "java -cp target/classes utils.testreportuploader"
-        }
-    }
+                    // Maven exec 플러그인을 사용하여 특정 클래스 실행
+                    // 여기서 'utils.testreportuploader' 클래스를 지정
+                    sh "mvn exec:java -Dexec.mainClass='utils.testreportuploader'"
+                }
+            }
 }
 
 
