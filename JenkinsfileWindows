@@ -296,8 +296,6 @@ pipeline {
 
                     // ★ 여기부터 JSON 병합 코드 추가 ★
                     // 각 테스트 케이스별 JSON 결과 파일들을 하나의 JSON 배열로 병합
-                    import groovy.json.JsonSlurper
-                    import groovy.json.JsonOutput
 
                     def combinedResults = []
                     map.testcases.each { key, value ->
