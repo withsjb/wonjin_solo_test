@@ -12,7 +12,7 @@ pipeline {
     }
     environment {
         // ! Jenkins Web에서 설정한 값
-        JIRA_CLOUD_CREDENTIALS = credentials('jiraAPI_token')
+        JIRA_CLOUD_CREDENTIALS = credentials('jira-api-token')
         // ! Jira trigger를 통해 자동으로 받는 값
         JIRA_ISSUE_KEY = "${JIRA_TEST_PLAN_KEY}"
 
