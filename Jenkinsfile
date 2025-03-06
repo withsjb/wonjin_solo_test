@@ -1,18 +1,18 @@
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+
+
 def map = [:]
 pipeline {
-    agent {
-        label "master"
-    }
+    agent any   // 'any'는 이 파이프라인이 사용 가능한 어떤 Jenkins 에이전트에서도 실행될 수 있음을 의미
     // ! Jenkins Web에서 지정한 tools
     tools {
         maven "jenkins-maven"
     }
     environment {
         // ! Jenkins Web에서 설정한 값
-        JIRA_CLOUD_CREDENTIALS = credentials('jira-api-token')
+        JIRA_CLOUD_CREDENTIALS = credentials('jiraAPI_token')
         // ! Jira trigger를 통해 자동으로 받는 값
         JIRA_ISSUE_KEY = "${JIRA_TEST_PLAN_KEY}"
 
@@ -26,6 +26,13 @@ pipeline {
         BUILD_ID = "${BUILD_ID}"
     }
     stages {
+        stage('Workspace Cleanup') {
+            steps {
+                cleanWs()
+                // 또는 특정 디렉토리만 정리하려면
+                // sh "rm -rf ${env.WORKSPACE}/*"
+            }
+        }
         stage("Init") {
             steps {
                 script {
@@ -64,19 +71,20 @@ pipeline {
                 script {
                     println "✅✅✅✅ Set environments / Get testcases ✅✅✅✅"
                     // ! Jira의 custom field 중 Tablet info 라는 select field의 현재 설정된 값을 가져온다.
-                    def test_env = map.issue.data.fields[map.const.test_env].value[0]
-                    println "Test environment (slave) --->" + test_env
+                    // def test_env = map.issue.data.fields[map.const.test_env].value[0]
+                    def test_env = map.issue.data.fields[map.const.test_env].value
+                    // println "Jira field value: ${map.issue.data.fields[map.const.test_env]}"
+                    // println "Available agents: ${map.agents_ref}"
+
+
+                    // println "Test environment (devices) --->" + test_env
 
                     // ! init method에서 지정해놓은 agents_ref 중 현재 설정된 Tablet info 필드 값과 일치하는 값이 있는지 확인 후 path, slave 설정 
                      map.agents_ref.each { key, value ->
                         if (test_env == key) {
-                            println "map.current_node1" + map.current_node
-                            if (test_env.contains("SM-")) {
-                                map.current_node = key.substring(3)
-                                println "map.current_node2" + map.current_node
-                            } else {
-                                map.current_node = key
-                            }
+                            println "map.current_node" + map.current_node
+                            
+                            map.current_node = key
                             map.current_path = value
                         }
                     }
@@ -84,64 +92,49 @@ pipeline {
                     println "current node: " + map.current_node
                     println "current node's source path: " + map.current_path
 
-                    // ! 위에서 확인한 Tablet info 값이 지정한 환경 중 무엇과도 일치하지 않으면 에러
+                    // Tablet info 값 검증
                     if (map.current_node == null || map.current_path == null) {
                         jenkinsException(map, "JIRA 'Tablet info' field value is invalid. These are the available values: ${map.agents_ref}")
                     }
 
-                    // ! 가져온 Test Plan/Run issue의 Test 대상 필드에 적용된 JQL을 사용하여 get test issues.
+                    // JQL 쿼리 검증
                     def jql = map.issue.data.fields[map.const.plan_tests]
-                    if (jql.length() <= 0) {
+                    if (jql == null || jql.toString().trim().isEmpty()) {
                         jenkinsException(map, "This 'Test Plan/Run' issues has empty value of 'Test 대상' field")
                     }
-                    // ! JIRA REST API (JQL로 이슈들 가져오기)
-                    def result = getIssuesByJql(map.jira.base_url, map.jira.auth, jql.toString())
 
-                    // ! 가져온 issue가 없으면 에러처리
-                    if (result.issues.size() == 0 || result.issues == null) {
-                        jenkinsException(map, "This 'Test Plan/Run' issues has no tests")
-                    }
+                    // println "Executing JQL query: ${jql}"
 
-                    // ! 이슈들 하나하나의 issueKey:scenario를 map에 저장
-                    for (def issue in result.issues) {
-                        map.testcases.put(issue.key, issue.fields[map.jira.scenario_field].content[0].content[0].text)
-                    }
+                    try {
+                        def result = getIssuesByJql(map.jira.base_url, map.jira.auth, jql.toString())
+                        // println "Result: ${result}"
+
+                        if (result.issues == null || result.issues.size() == 0) {
+                            jenkinsException(map, "This 'Test Plan/Run' issues has no tests")
+                        }
+
+                        // 이슈들의 issueKey:scenario를 map에 저장
+                        for (def issue in result.issues) {
+                            map.testcases.put(issue.key, issue.fields[map.jira.scenario_field].content[0].content[0].text)
+                        }
+                    } catch (Exception e) {
+                        jenkinsException(map, "Failed to execute JQL query: ${e.message}")
+                    }  
                 }
             }
         }
-
-        // stage("Checkout slave's local branch") {
-        //     agent {
-        //         label "${map.current_node}"
-        //     }
-        //     steps {
-        //         dir("${map.current_path}") {
-        //         script {
-        //             println "✅✅✅✅ Checkout slave's local branch ✅✅✅✅"
-        //             try {
-        //                 // ! slave의 테스트 환경에서 cicd에 사용되는 branch로 checkout (이미 해당 브랜치겠지만 예외상항을 배제)
-        //                 git branch: map.git.branch, url: map.git.url
-        //             } catch(error) {
-        //                 jenkinsException(map, error)
-        //             }
-        //         }
-        //     }
-        //     }
-        // }
-
         stage("Download testcases on slave") {
             // ! agent는 지정한 slave node의 label
             agent {
                 label "${map.current_node}"
             }
             steps {
-                echo "스탭 진입"
                 // ! dir로 특정 path를 지정하면 지정한 slave의 지정한 path에서 작업을 한다는 의미
                 dir("${map.current_path}") {
                     script {
                         println "✅✅✅✅ Download testcases on slave ✅✅✅✅"
                         println "testcases count --> : ${map.testcases.size()}"
-                        println "map.current_path --> : ${map.current_path}/src/main/resources/app.properties"
+                        // println "map.current_path --> : ${map.current_path}"
                         if (!fileExists("${map.current_path}/src/main/resources/app.properties")) {
                             println "no app.properites"
                             map.skipByAppProperties = true
@@ -149,7 +142,6 @@ pipeline {
                         // fileExists는 Jenkins Pipeline에서 제공하는 method로 동일하게 사용 가능
                         if (fileExists("${map.cucumber.feature_path}")) {
                             // 해당 파일/폴더가 있다면 지움
-                            
                             sh script: """ rm -rf "${map.cucumber.feature_path}" """, returnStdout: false
                         }
                         // 해당 폴더가 없으면 만듦
@@ -158,102 +150,36 @@ pipeline {
 
                         // ! map.testcases에 담긴 각 시나리오를 하나의 feature 파일로 변환 하는 과정에서 
                         // ! 첫 줄의 Feature Name을 지정
-                        
-
                         // ! JIRA에 올라가 있는 scenario를 가져와서 description으로 해당 JIRA issue key를 붙여준다.
                         // ! issue key를 붙여주는 이유는 해당 시나리오가 JIRA에 어떤 issue와 매핑되는지 알기 위함
-                        map.testcases.each { key, value ->
-
-                            def feature = (map.cucumber.feature_name != null) ? "Feature: ${map.cucumber.feature_name}\n\n\n" : "Feature: Default\n\n\n"
-                            sh "mkdir -p '${map.cucumber.feature_path}/${key}'"
-                            sleep 1
-                            def addedDescription = null
-                            if (value.contains("\r\n")) {
-                                addedDescription = value.replaceFirst("\r\n", ("\r\n" + key + "\n\n"))
-                                 println "addedDescription1 ---> : " + addedDescription
-                                feature += addedDescription
-                                feature += "\n\n"
-                            } else {
-                                addedDescription = value.replaceFirst("\n", ("\n" + key + "\n\n"))
-                                println "addedDescription2 ---> : " + addedDescription
-                                feature += addedDescription
-                                feature += "\n\n"
-                            }
-
-                                println "key ---> : " + key
-                                println "value ---> : " + feature
-                                 println "${map.current_path}/a_features/auto.feature"
-                                 println "./a_features/${key}/${key}.feature"
+                        map.testcases.each { testKey, testValue ->
+                        def feature = (map.cucumber.feature_name != null) ? "Feature: ${map.cucumber.feature_name}\n\n\n" : "Feature: Default\n\n\n"
                         
-                            writeFile(file: "./a_features/${key}/${key}.feature", text: feature, encoding: 'UTF-8')
+                        // macOS 환경에 맞게 sh 명령어 사용
+                        sh script: """ mkdir -p "${map.cucumber.feature_path}/${testKey}" """, returnStdout: false
+                        sleep 1
                         
+                        def addedDescription = null
+                        if (testValue.contains("\r\n")) {
+                            addedDescription = testValue.replaceFirst("\r\n", ("\r\n" + testKey + "\n\n"))
+                            feature += addedDescription
+                            feature += "\n\n"
+                        } else {
+                            addedDescription = testValue.replaceFirst("\n", ("\n" + testKey + "\n\n"))
+                            feature += addedDescription
+                            feature += "\n\n"
                         }
-                        // println "key ---> : " + key
-                        // println "value ---> : " + feature
-                    
-                        // ! slave의 directory에서 auto.feature라는 파일을 만들고 그 파일에 jira에서 가져온 모든 시나리오를 집어넣음
-                      
+                        
+                        println "key ---> : " + testKey
+                        println "value ---> : " + feature
+                        
+                        // .feature 확장자 추가 및 변수명 수정
+                        writeFile(file: "${map.cucumber.feature_path}/${testKey}/${testKey}.feature", text: feature, encoding: 'UTF-8')
+                    }
                     }
                 }
             }
         }
-
-        stage("Reboot devices") {
-            agent {
-                label "${map.current_node}"
-            }
-            steps {
-                 
-                    script {
-                        println "🔄🔄🔄 Rebooting the device before tests 🔄🔄🔄"
-                        
-                        def appPropertiesPath = "${map.current_path}/src/main/resources/app.properties"  
-                        echo "Using app.properties from: ${appPropertiesPath}"
-                        // app.properties 파일 읽기
-                        def propsContent = readFile(appPropertiesPath)  
-                        def props = [:]
-
-                        propsContent.split('\n').each { line ->  
-                        if (line && !line.startsWith('#')) { // 주석 제거  
-                            def splitLine = line.split('=')  
-                            if (splitLine.size() == 2) {  
-                                props[splitLine[0].trim()] = splitLine[1].trim()  
-                            }  
-                        }  
-                    }
-
-                    // deviceName과 udid 가져오기  
-                    def deviceName = props['deviceName']  
-                    def udid = props['udid']
-
-                    echo "Device Name: ${deviceName}, UDID: ${udid}"
-
-                        if (udid) {
-                            println "Rebooting device with udid: ${udid}, device name: ${deviceName}"
-
-                            // ADB 연결 상태 확인
-                            def deviceCheck = sh(script: "adb devices | grep ${udid} || echo 'notfound'", returnStdout: true).trim()
-                            
-                            if (deviceCheck.contains('notfound')) {
-                                error "❌ Device with UDID ${udid} not found!"
-                            }
-
-                            // ADB 명령어 실행
-                            sh "adb -s ${udid} reboot"
-                            sleep 10  // 재부팅 후 안정적인 실행을 위한 대기 시간
-                            
-                            // 기기 재연결 대기
-                            sh "adb -s ${udid} wait-for-device"
-                            println "✅ Device ${udid} is ready."
-                        } else {
-                            error "❌ UDID not found in app.properties"
-                        }
-                    }
-                
-            }
-        }
-
-
 
         stage("Build") {
             when { expression {!map.skipByAppProperties} }
@@ -318,201 +244,125 @@ pipeline {
                         if (fileExists("${map.cucumber.log_path}")) {
                             sh("rm -rf ${map.cucumber.log_path}")
                         }
-                        try {
-                            // ! Run cucumber test command line
-                            sh("mvn exec:java -D file.encoding=UTF-8 -D project.build.sourceEncoding=UTF-8 -D project.reporting.outputEncoding=UTF-8 -D exec.mainClass=io.cucumber.core.cli.Main -D exec.args=\"${map.cucumber.feature_path} --glue ${map.cucumber.glue} --plugin json:${map.cucumber.report_json} --plugin progress:${map.cucumber.running_progress} --publish --plugin pretty --plugin html:${map.cucumber.cucumber_html}\"")
-                        } catch(error) {
-                            println "automation test error ---> : ${error.getMessage()}"
-                        }
-                    }
-                }
 
-                dir("${map.current_path}") {
-                    script {
-                        try {
-                            // ! 테스트가 끝난 후 appium server kill (원래는 이 stage에서만 실행되는 스크립트이기 때문에 이 stage가 끝나면 저절로 appium server가 꺼지긴 한다만, 불예측성 에러를 방지하기 위해 process 직접 종료)
-                            // ! lsof -t -i :PORT 가 의미하는건 해당 포트로 할당된 process를 가져오는것
-                            OUTPUT = sh script: "kill \$(lsof -t -i :${APPIUM_PORT})", returnStdout: true
-                            echo OUTPUT
+                         // *실패한 시나리오를 저장할 맵 선언
+                        def failedScenarios = [:]
 
-                            // ! 테스트가 모두 끝나고 생성되는 cucumber.json 파일을 읽어서 map에 저장
-                            map.cucumber.result_text = readFile file: map.cucumber.report_json
-                        } catch (NoSuchFileException) {
-                            throwableException(map, NoSuchFileException)
-                        } catch (Exception) {
-                            throwableException(map, Exception)
-                        }
+                        // * 각 테스트 케이스 실행 함수
+                        map.testcases.each { testKey, testValue ->
+                            try {
+                                // ! Run cucumber test command line for each test case
+                                sh """
+                                    mvn exec:java -D file.encoding=UTF-8 \
+                                    -D project.build.sourceEncoding=UTF-8 \
+                                    -D project.reporting.outputEncoding=UTF-8 \
+                                    -D exec.mainClass=io.cucumber.core.cli.Main \
+                                    -D exec.args="${map.cucumber.feature_path}/${testKey} \
+                                    --glue ${map.cucumber.glue} \
+                                    --plugin json:./a_features/${testKey}/${map.cucumber.report_json} \
+                                    --plugin progress:./a_features/${testKey}/${map.cucumber.running_progress} \
+                                    --publish \
+                                    --plugin pretty \
+                                    --plugin html:./a_features/${testKey}/${map.cucumber.cucumber_html}"
+                                """
 
-                        // ! Test가 정상 수행되어서 report 파일이 생성되었다면 적어도 사이즈가 0은 될 수 없음
-                        if (map.cucumber.result_text == null || map.cucumber.result_text.isEmpty()) {
-                            jenkinsException(map, "Reports file was created, but file is empty")
+                            } catch (error) {
+                                println "자동화 테스트 오류 (${testKey}): ${error.getMessage()}"
+
+                                // *2. 재실실행에서 실패한 시나리오 저장
+                                failedScenarios[testKey] = testValue
+                            }
                         }
+                        // *실패한 시나리오 수를 map에 저장
+                        map.cucumber.failedScenarios = failedScenarios.size()
+
+                        // *실패한 시나리오 수 출력
+                        println "Number of Retry failed scenarios: ${map.cucumber.failedScenarios}"
+
                     }
                 }
             }
         }
 
+        stage("Analysis test result") {  
+            when { expression {!map.skipByAppProperties} }  
+            agent { label "${map.current_node}" }  
+            steps {  
+                dir("${map.current_path}") {  
+                    script {  
+                        println "✅✅✅✅ Analysis test result ✅✅✅✅"  
 
-
-        stage("Analysis test result") {
-            when { expression {!map.skipByAppProperties} }
-            agent { label "${map.current_node}" }
-            steps {
-                dir("${map.current_path}") {
-                    script {
-                        println "✅✅✅✅ Analysis test result ✅✅✅✅"
-                        
                         try {
-                            // ! 테스트 후 생성된 cucumber.json 파일을 가져온다.
-                            map.cucumber.result_json = readFile file: map.cucumber.report_json
-                            // ! 가져온 cucumber.json 파일을 parsing
-                            def results = new JsonSlurper().parseText(map.cucumber.result_json as String)
+                            map.testcases.each { testKey, testValue ->
+                                // 테스트 후 생성된 cucumber.json 파일을 가져온다.  
+                                def jsonFile = "./a_features/${testKey}/${map.cucumber.report_json}"
+                                if (fileExists(jsonFile)) {
+                                    map.cucumber.result_json = readFile(file: jsonFile)
+                                    def folder = "${testKey}"
+                                    println "key_________________>${testKey}"
+                                    println "value_________________>${testValue}"
+                                    println "folder___________>${folder}"
 
-                            def clearResult = results[0].elements
-                            def isPassed = true
-                            def currentIssue = null
-                            def scenarioName = null
-                            def errorreason = ""
+                                    // 가져온 cucumber.json 파일을 parsing
+                                    def results = new JsonSlurper().parseText(map.cucumber.result_json)
+                                    if (results && results.size() > 0) {
+                                    def clearResult = results[0].elements
+                                    def isPassed = true
+                                    def currentIssue = null
+                                    def scenarioName = null
 
-                            for (def result in clearResult) {
-                                // ! description에는 반드시 해당 jira issue key값이 들어있어야 한다. 상위 stage에서 이 부분을 처리해줬음
-                                if (result.description == "") {
+                                    clearResult.each { result ->
+                                    // description에 반드시 해당 jira issue key값이 들어있어야 한다.
+                                    if (result.description == null || result.description.trim() == "") {
                                     jenkinsException(map, "Scenario description (Issue key) required.")
-                                }
-                                currentIssue = result.description.trim()
+                                    }
+                                    currentIssue = result.description.trim()
 
-                                // ! 테스트 Scenario의 name
-                                scenarioName = result.name.trim().replaceAll(" ", "_")
-                                println "defect screenshot name --> ${scenarioName}"
+                                    // 테스트 Scenario의 name
+                                    scenarioName = result.name ? result.name.trim().replaceAll(" ", "_") : "Unknown_Scenario"
+                                    println "defect screenshot name --> ${scenarioName}"
 
-                                // ! 테스트 Scenario의 before, after step의 result
-                                def before = result.before[0].result
-                                def after = result.after[0].result
+                                    // 테스트 Scenario의 before, after step의 result
+                                    def before = result.before ? result.before[0]?.result : null
+                                    def after = result.after ? result.after[0]?.result : null
 
-                                if (!before.status.contains("passed")) {
-                                    map.cucumber.error_message = before.error_message
-                                    println "befor map.cucumber.error_message --> ${map.cucumber.error_message}"
+                                    if (before && !before.status?.contains("passed")) {
+                                    handleFailure(map, currentIssue, before.error_message, scenarioName)
                                     isPassed = false
+                                    return // continue to next iteration
+                                    }
 
-                                    
-                                    // errorreason = errordescrit(before.error_message)
-                                    println "befor errorreason --> ${errorreason}"
-                                    
-                                    // ! create defect issue 
-                                    def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                        "Defect of test '${currentIssue}'",
-                                        errorreason,
-                                        map.cucumber.error_message,
-                                        map.jira.defect_issuetype)
-                                        )
-                                    
-                                    // ! 추후 stage에서 screenshot을 attach할 때 필요한 정보들 
-                                    map.cucumber.defect_info.put(res.key, scenarioName)
-
-                                    // ! Plan/Run linked with Bug
-                                    linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
-                                    // ! Bug linked with Test case
-                                    linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(res.key, currentIssue, map.jira.tests_link))
-                                    // ! continue 처리를 하는 이유는 passed가 아닌 이후부터는 모든 step이 skipped 상태이기 때문에 문제가 발생한 스텝에서의 에러를 defect로 생성하고 다음 scenario로 넘어가면 됨
-                                    continue
-                                }
-
-                                if (!after.status.contains("passed")) {
-                                    map.cucumber.error_message = after.error_message
-                                    println "after map.cucumber.error_message --> ${map.cucumber.error_message}"
+                                    if (after && !after.status?.contains("passed")) {
+                                    handleFailure(map, currentIssue, after.error_message, scenarioName)
                                     isPassed = false
+                                    return // continue to next iteration
+                                    }
 
-                                    // errorreason = errordescrit(after.error_message)
-                                    // println "after errorreason --> ${errorreason}"
-                                    
-                                    def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                        "Defect of test '${currentIssue}'",
-                                        errorreason,
-                                        map.cucumber.error_message,
-                                        map.jira.defect_issuetype)
-                                        )
-                                    // ! Plan/Run linked with Bug
-                                    linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
-                                    // ! Bug linked with Test case
-                                    linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(res.key, currentIssue, map.jira.tests_link))
-                                    continue
-                                }
-                                
-                                for (def step in result.steps) {
-                                    def eachStep = step.result
-                                    if (!eachStep.status.contains("passed")) {
-                                        map.cucumber.error_message = eachStep.error_message
-                                        def uiElement = extractUiElement(map.cucumber.error_message)
-
-        
-                                        // errorreason = errordescrit(map.cucumber.error_message, uiElement)
-                                        
-                                        println "eachStep map.cucumber.error_message --> ${map.cucumber.error_message}"
-                                        
-                                        if (map.cucumber.error_message == null || map.cucumber.error_message == "") {
-                                            // ! undefined은 error_message가 없어서 직접 처리해줘야 함. undefined은 해당 step이 implement되지 않았을 때 발생함
-                                            if (eachStep.status.contains("undefined")) {
-                                                isPassed = false
-                                                
-                                                def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                                "Defect of test '${currentIssue}'",
-                                                errorreason,
-                                                "step '${step.name}'의 step definition이 정의되지 않았습니다.", map.jira.defect_issuetype)
-                                                )
-
-                                                // ! Plan/Run linked with Bug
-                                                linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
-                                                // ! Bug linked with Test case
-                                                linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(res.key, currentIssue, map.jira.tests_link))
-                                                // ! 역시 마찬가지로 passed가 아닌 무언가 (undefined, failed) 생긴 이후 step은 다 skipped임 그래서 이 for문을 빠져나가면 됨
-                                                break
-                                            } else {
-                                                // ! error_message가 없고 undefined가 아니면 skipped인 경우밖에 없음 근데 skipped인 경우가 loop에서 나오면 안됨 (skipped가 나오기전에 빠져나오는 로직을 실행하기 때문에)
-                                                jenkinsException(map, "error message is empty")
-                                            }
-                                        }
+                                    result.steps?.each { step ->
+                                        def eachStep = step.result
+                                        if (eachStep && !eachStep.status?.contains("passed")) {
+                                        handleFailure(map, currentIssue, eachStep.error_message, scenarioName, step.name)
                                         isPassed = false
-                                        println currentIssue
-                                        println map.cucumber.error_message
-                                        println map.jira.defect_issuetype
-                                        println errorreason
-                                        
-                                        def res = createIssue(map.jira.base_url, map.jira.auth, createBugPayload(map.jira.project_key,
-                                        "Defect of test '${currentIssue}'",
-                                        errorreason,
-                                        map.cucumber.error_message,
-                                        map.jira.defect_issuetype)
-                                        )
-                                        
-                                        // ! 추후 stage에서 screenshot을 attach할 때 필요한 정보들 
-                                        map.cucumber.defect_info.put(res.key, scenarioName)
-
-                                        // ! Plan/Run linked with Bug
-                                        linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(JIRA_ISSUE_KEY, res.key, map.jira.defect_link))
-                                        // ! Bug linked with Test case
-                                        linkIssue(map.jira.base_url, map.jira.auth, createLinkPayload(res.key, currentIssue, map.jira.tests_link))
-                                        break
+                                        return true // break the inner loop
+                                        }
                                     }
                                 }
+                                } else {
+                                    println "Warning: No results found in JSON for ${testKey}"
+                                }
+                            } else {
+                                println "Warning: JSON file not found for ${testKey}"
                             }
-                            
-
-
-                            // if (isPassed) {
-                            //     // ! 이 statement가 실행되는 경우는 모든 step이 다 passed 될 경우임 그래서 test plan/run issue를 finish 상태로 변경
-                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.success_transition), JIRA_ISSUE_KEY)
-                            // } else {
-                            //     // ! 이 statement가 실행되는 경우는 모든 시나리오 중 하나라도 passed가 이루어지지 않은 시나리오가 있다면 실행됨 test plan/run issue를 test fail 상태로 변경
-                            //     transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-                            // }
-                        } catch (error) {
-                            throwableException(map, error)
                         }
-                    }
-                }
-            }
-        }
-
+                        } catch (Exception e) {
+                            println "Error in Analysis test result stage: ${e.message}"
+                            e.printStackTrace()
+                            throwableException(map, e)
+                        } 
+                    }  
+                }  
+            }  
+        }   
         stage("Attached defect screenshots") {
             when { expression {!map.skipByAppProperties} }
             agent { label "${map.current_node}" }
@@ -522,30 +372,28 @@ pipeline {
                         println "✅✅✅✅ Attached defect screenshots or bypass ✅✅✅✅"
 
                         if (map.cucumber.defect_info.size() > 0) {
-                            // ! cURL로 각 defect issue에 맞는 defect screenshot을 업로드한다.
-                            map.cucumber.defect_info.each { key, value ->
-                            sh "echo 'Current directory: ${map.current_path}'"
-                        sh "echo 'Defect screenshot file path: ${map.current_path}/defect_screenshots/${value}.png'"
-
-                        // 파일 존재 여부 확인
-                        sh "ls -l '${map.current_path}/defect_screenshots/${value}.png'"
-
-                        println "✅✅✅✅ ✅✅✅✅✅✅✅✅ ✅✅✅✅"
-
-
-                            // sh """
-                            //     curl --insecure -D- \
-                            //     -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
-                            //     -X POST \
-                            //     -H 'X-Atlassian-Token: no-check' \
-                            //     -F 'file=@${map.current_path}/defect_screenshots/${value}.png;filename=errorscreenshot.png' \
-                            //     '${map.jira.base_url}/rest/api/3/issue/${key}/attachments'
-                            //     """
-                                sh "echo 'jira.auth_user: ${map.jira.auth_user}'"
-                                sh "echo 'defect_screenshot_path: ${map.cucumber.defect_screenshot_path}/${value}.png'"
-                                sh "echo 'jira_api: ${map.jira.base_url}/rest/api/3/issue/${key}/attachments'"
-                                
-                                sh script: "curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@${map.cucumber.defect_screenshot_path}/${value}.png' ${map.jira.base_url}/rest/api/3/issue/${key}/attachments", returnStdout: false
+                            // 스크린샷 디렉토리 존재 여부 확인 및 생성
+                            dir("${map.current_path}/defect_screenshots") {
+                                map.cucumber.defect_info.each { testKey, testValue ->
+                                    // 파일 존재 여부 확인
+                                    def screenshotPath = "${map.current_path}/defect_screenshots/${testValue}.png"
+                                    if (fileExists(screenshotPath)) {
+                                        try {
+                                            sh """
+                                                curl --insecure -D- \
+                                                -u '${JIRA_CLOUD_CREDENTIALS_USR}:${JIRA_CLOUD_CREDENTIALS_PSW}' \
+                                                -X POST \
+                                                -H 'X-Atlassian-Token: no-check' \
+                                                -F "file=@${screenshotPath};filename=errorscreenshot.png" \
+                                                '${map.jira.base_url}/rest/api/3/issue/${testKey}/attachments'
+                                            """
+                                        } catch (Exception e) {
+                                            println "Warning: Failed to attach screenshot for issue ${testKey}: ${e.message}"
+                                        }
+                                    } else {
+                                        println "Warning: Screenshot file not found: ${screenshotPath}"
+                                    }
+                                }
                             }
                         }
                     }
@@ -565,12 +413,17 @@ pipeline {
                         // ! 이렇게 하는 이유는 테스트가 fail이 나는 scenario가 있다고해서 build가 fail이라고 볼 순 없고 그렇다고 success라고 보기도 애매하기 때문에 상황에 맞춰서 build status를 표시하게 하기 위함
                         cucumber buildStatus: 'UNSTABLE',
                             reportTitle: 'My report',
-                            fileIncludePattern: '**/*.json',
+                            fileIncludePattern: '**/a_features/**/cucumber.json',
+                            fileExcludePattern: '**/.vscode/**/*.json',
                             trendsLimit: 10,
                             classifications: [
                                 [
                                     'key': 'Browser',
                                     'value': 'Chrome'
+                                ],
+                                [
+                                    'key': 'OS', 
+                                    'value': 'MacOS'
                                 ]
                             ]
                         
@@ -586,102 +439,253 @@ pipeline {
                         
                         // ! test plan/run 이슈의 attachment로 cucumber report를 올림 이 파일은 jenkins의 plugin인 cucumber-report가 아니고 cucumber runner를 실행할 때 실행 후 만들어지는 html 파일임
                         // ! 이렇게 하는 이유는 Jenkins 권한을 가지지 않은 사람이 있는 경우 위에 URL에 접근이 불가능하므로
-                        sh("curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@${map.cucumber.cucumber_html}' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments")
+                        // sh("curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@${map.cucumber.cucumber_html}' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments")
+
                     }
                 }
             } 
         }
-
-       stage("Copy cucumber.json") {
-    steps {
-    script {
-        println "✅✅✅✅ Copy cucumber.json ✅✅✅✅"
-        def dateFormatted = new Date().format("yyyy-MM-dd")  // 날짜 포맷
-        def destinationDir = "target_${dateFormatted}"  // 날짜가 포함된 디렉토리명
-        def sourceJson = '/Users/sonjinbin/jenkins/T583/workspace/wongjin_solo_test@2/cucumber.json'  // 결과 JSON 파일 경로
-        def destinationFile = "${destinationDir}/cucumber_${dateFormatted}.json"
-
-        // 경로 출력 (디버깅 용)
-        echo "Source JSON file: ${sourceJson}"
-        echo "Destination file: ${destinationFile}"
-
-        // 디렉토리 생성 및 파일 복사
-        sh """
-            mkdir -p ${destinationDir}
-            cp ${sourceJson} ${destinationFile}
-            echo "Cucumber JSON file copied to: ${destinationFile}"
-        """
-    }
-}
-
-}
-
-
-stage('Compile and Run Test Report Uploader') {
-    steps {
-                script {
-                    println "✅✅✅✅ Compile and Run Test Report Uploader ✅✅✅✅"
-                    // Maven을 사용하여 프로젝트 빌드 (전체 컴파일)
-                    sh "mvn clean compile"
-
-                    // Maven exec 플러그인을 사용하여 특정 클래스 실행
-                    // 여기서 'utils.testreportuploader' 클래스를 지정
-                    sh "mvn exec:java -Dexec.mainClass='utils.TestReportUploader'"
-                }
-            }
-}
-
-
-
-        stage("Zip file transfer") {
+         // * 시나리오 TC건수(모든 EXAMPLES) 포함 하는 Result
+        stage("Update Jira with Test Results") {
+            when { expression {!map.skipByAppProperties} }
+            agent { label "${map.current_node}" }
             steps {
-                script {
-                    // ! 아래 jenkins_server, jenkins_server_port는 Jenkins Web에서 Global variables로 작성할 수 있음. 
-                    // ! remote map은 SSH Steps 이라는 Jenkins plugin을 사용하는 방식임 아래처럼 작성해줘야함
-                    // def remote = [:]
-                    // remote.name = "${jenkins_server}"
-                    // remote.host = "${jenkins_server}"
-                    // remote.port = jenkins_server_port as int
-                    // remote.user = TBELL_BACKUP_AUTH_USR
-                    // remote.password = TBELL_BACKUP_AUTH_PSW
-                    // remote.allowAnyHosts = true
+                dir("${map.current_path}") {
+                    script {
+                        println "✅✅✅✅ Update Jira with Test Results ✅✅✅✅"
 
-                    // ! Jenkins Server 내 Plugin에 접근하여 빌드 ID에 따라 생성되는 cucumber report를 JIRA Issue (Tets Plan/Run)에 올려야 함. 
-                    sh("cd /Users/sonjinbin/.jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u ${map.jira.auth_user} -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip")
-                    // sshCommand remote: remote, command: "cd /var/lib/jenkins/jobs/${JOB_NAME}/builds/${BUILD_ID}; zip -r report_included_css_file.zip cucumber-html-reports_*; curl -D- -u $TBELL_JIRA_CWCHOI_USR:$TBELL_JIRA_CWCHOI_PSW -X POST -H 'X-Atlassian-Token: no-check' -F 'file=@report_included_css_file.zip' ${map.jira.base_url}/rest/api/3/issue/${JIRA_ISSUE_KEY}/attachments; rm -rf report_included_css_file.zip"
+                        def totalScenarios = 0 // 전체 시나리오 수
+                        def failedScenarios = 0 // 실패한 시나리오 수
+                        def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss") // 현재 날짜와 시간 추가
+                        def newTableRows = "" // 새로 생성된 테이블 행을 저장할 변수
+                        def allTestsPassed = true // 모든 테스트가 성공했는지 여부 확인
+
+                        // 중복 시나리오 이름을 추적하기 위한 맵
+                        def scenarioNameCount = [:]
+
+                        // 각 cucumber.json 파일을 읽어와 시나리오 결과를 분석
+                        map.testcases.each { testKey, testValue ->
+                            def jsonFile = "./a_features/${testKey}/${map.cucumber.report_json}"
+                            if (fileExists(jsonFile)) {
+                                // JsonSlurper를 사용하여 JSON 파일 읽기
+                                def jsonContent = readFile(file: jsonFile)
+                                def jsonParser = new JsonSlurper()
+                                def results = jsonParser.parseText(jsonContent)
+
+                                results[0].elements.each { scenario ->
+                                    totalScenarios++ // 모든 시나리오를 카운트
+                                    def name = scenario.name
+
+                                    // 중복된 시나리오 이름에 번호 추가
+                                    if (scenarioNameCount.containsKey(name)) {
+                                        scenarioNameCount[name] += 1
+                                        name += " Example - (${scenarioNameCount[name]})"
+                                    } else {
+                                        scenarioNameCount[name] = 1
+                                        name += " Example - (1)"
+                                    }
+
+                                    // 실패 여부 확인 및 테이블 행 추가
+                                    if (!scenario.steps.every { it.result.status == 'passed' }) {
+                                        failedScenarios++ // 실패한 시나리오만 카운트
+                                        allTestsPassed = false // 모든 테스트가 성공하지 않음
+                                        newTableRows += "|${currentDate}|${name}|fail|\n"
+                                    }
+                                }
+                            }
+                        }
+
+                        // Total 시나리오 TC 테이블 생성 (항상 최상단에 위치)
+                        def totalScenarioTable = """
+                        |Total 시나리오 TC|${totalScenarios}|
+                        """
+
+                        // 실패한 시나리오가 10개 이상인 경우 요약 테이블 생성
+                        def failureSummaryTable = ""
+                        if (failedScenarios >= 10) {
+                            failureSummaryTable = """
+                            ||일자||시나리오명||결과 (실패 시나리오 TC 개수: ${failedScenarios})||
+                            |${currentDate}|10개 이상의 시나리오가 실패하였습니다.|${failedScenarios}|
+                            """
+                        }
+
+                        // 모든 테스트가 성공한 경우 간략한 메시지 생성
+                        def newTable = ""
+                        if (allTestsPassed) {
+                            newTable = """
+                            ||일자||시나리오명||결과 (실패 시나리오 TC 개수: ${failedScenarios})||
+                            |${currentDate}|모든 시나리오가 테스트 성공하였습니다.|성공|
+                            """
+                        } else if (failedScenarios < 10) {
+                            newTable = """
+                            ||일자||시나리오명||결과 (실패 시나리오 TC 개수: ${failedScenarios})||
+                            ${newTableRows}
+                            """
+                        }
+
+                        // 기존 Jira 설명 가져오기 및 "Total 시나리오 TC" 제거
+                        def currentDescription = jiraGetIssue(idOrKey: JIRA_ISSUE_KEY, site: map.jira.site_name).data.fields.description ?: ""
+                        currentDescription = currentDescription.replaceAll(/\|Total 시나리오 TC\|.*?\|\n/, "").trim()
+
+                        // 새로운 설명 생성 (Total 시나리오 TC 테이블을 최상단에 배치)
+                        def newDescription = """
+                        ${totalScenarioTable}
+
+                        ${failureSummaryTable}
+
+                        ${newTable}
+
+                        ${currentDescription}
+                        """
+
+                        // Payload 생성
+                        def payload = [
+                            fields: [
+                                description: newDescription
+                            ]
+                        ]
+
+                        // 디버깅용 로그 출력
+                        println "Payload being sent to Jira:"
+                        println JsonOutput.prettyPrint(JsonOutput.toJson(payload))
+
+                        // Jira 이슈 업데이트 호출
+                        updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
+
+                        println "Jira issue updated with detailed results table."
+                    }
                 }
             }
         }
+
+        // * 중복시나리오 제거 하여, 시나리오 수만 카운트
+        // stage("Update Jira with Test Results") {
+        //     when { expression {!map.skipByAppProperties} }
+        //     agent { label "${map.current_node}" }
+        //     steps {
+        //         dir("${map.current_path}") {
+        //             script {
+        //                 println "✅✅✅✅ Update Jira with Test Results ✅✅✅✅"
+
+        //                 def totalScenarios = 0
+        //                 def failedScenarios = 0
+        //                 def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss") // 현재 날짜와 시간 추가
+        //                 def tableContent = "||시나리오||결과 (${currentDate})||\n" // 테이블 헤더 생성
+
+        //                 // 중복 제거를 위한 Map 사용 (시나리오 이름 -> 실패 여부)
+        //                 def scenarioResults = [:]
+
+        //                 // 각 cucumber.json 파일을 읽어와 시나리오 결과를 분석
+        //                 map.testcases.each { testKey, testValue ->
+        //                     def jsonFile = "./a_features/${testKey}/${map.cucumber.report_json}"
+        //                     if (fileExists(jsonFile)) {
+        //                         def jsonContent = readFile(file: jsonFile)
+        //                         def results = readJSON text: jsonContent    // readJSON 사용
+
+        //                         results[0].elements.each { scenario ->
+        //                             def name = scenario.name
+        //                             if (!scenarioResults.containsKey(name)) {
+        //                                 scenarioResults[name] = true // 초기값은 성공으로 설정
+        //                                 totalScenarios++
+        //                             }
+        //                             if (!scenario.steps.every { it.result.status == 'passed' }) {
+        //                                 scenarioResults[name] = false // 실패가 발생하면 실패로 설정
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+
+        //                 failedScenarios = scenarioResults.values().count { !it } // 실패한 시나리오의 개수 계산
+
+        //                 // 실패한 시나리오가 10개 이상인 경우 요약 정보만 추가
+        //                 if (failedScenarios >= 10) {
+        //                     tableContent += "|❌ Fail 시나리오|${failedScenarios}|\n"
+        //                     tableContent += "|✅ Total 시나리오|${totalScenarios}|\n"
+        //                 } else {
+        //                     // 실패한 시나리오 테이블 생성
+        //                     scenarioResults.each { name, isPassed ->
+        //                         if (!isPassed) {
+        //                             tableContent += "|${name}|실패|\n"
+        //                         }
+        //                     }
+
+        //                     // 요약 정보 추가
+        //                     tableContent += "|❌ Fail 시나리오|${failedScenarios}|\n"
+        //                     tableContent += "|✅ Total 시나리오|${totalScenarios}|\n"
+        //                 }
+
+        //                 // 기존 Jira 설명 가져오기
+        //                 def currentDescription = jiraGetIssue(idOrKey: JIRA_ISSUE_KEY, site: map.jira.site_name).data.fields.description ?: ""
+
+        //                 // 새로운 설명 생성
+        //                 def newDescription = """
+        //                 ${tableContent}
+
+        //                 ${currentDescription}
+        //                 """
+
+        //                 // Payload 생성
+        //                 def payload = [
+        //                     fields: [
+        //                         description: newDescription
+        //                     ]
+        //                 ]
+
+        //                 // 디버깅용 로그 출력
+        //                 println "Payload being sent to Jira:"
+        //                 println JsonOutput.prettyPrint(JsonOutput.toJson(payload))
+
+        //                 // Jira 이슈 업데이트 호출
+        //                 updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)
+
+        //                 println "Jira issue updated with detailed results table."
+        //             }
+        //         }
+        //     }
+        // }
+    
+
+        // stage("Update Test Plan Description") {  
+        //     when { expression {!map.skipByAppProperties} }  
+        //     agent { label "${map.current_node}" }  
+        //     steps {  
+        //         script {  
+        //             println "✅✅✅✅ Update Test Plan Description ✅✅✅✅"  
+                    
+        //             try {  
+        //                 // 현재 날짜와 시간
+        //                 def currentDate = new Date().format("yyyy-MM-dd HH:mm:ss")  
+        //                     def failedCount = map.cucumber.failedScenarios  // 실패한 시나리오의 수
+        //                     println "실패한 시나리오의 수 --> ${failedCount}"  
+        //                     def totalCount = map.testcases.size()  // 총 시나리오의 수
+        //                     println "총 시나리오의 수 --> ${totalCount}"  
+                        
+        //                 // 새로운 설명 생성  
+        //                 def newDescription = """Test Run Result (${currentDate})  
+        //                 Failed Scenarios: ${failedCount}  
+        //                 Total Scenarios: ${totalCount}
+        //                 ----------------------------------------  
+
+        //                 """  
+        //                 // 기존 설명을 가져와서 새로운 설명 뒤에 추가  
+        //                 def existingDescription = map.issue.data.fields.description ?: ""  
+        //                 def payload = [  
+        //                     fields: [  
+        //                         description: newDescription + existingDescription  
+        //                     ]  
+        //                 ]  
+        //                 // Jira 이슈를 업데이트
+        //                 updateIssue(map.jira.base_url, map.jira.auth, JsonOutput.toJson(payload), JIRA_ISSUE_KEY)  
+        //             } catch (error) {  
+        //                 println "Warning: Failed to update Test Plan description: ${error.message}"  
+        //             }  
+        //         }  
+        //     }  
+        // }
     }
+    
 
-    post {
-        always {
-            script {
-                // ! 아래는 jenkins build가 어떻게 끝나든 무조건 test plan/run issue의 'Job Run No' field의 값에 jenkins build id를 넣어줌
-                def payload = [
-                    "fields": [
-                        "${map.jira.job_link}": "#${BUILD_ID}"
-                    ]
-                ]
-                payload = JsonOutput.toJson(payload)
-                updateIssue(map.jira.base_url, map.jira.auth, payload, JIRA_ISSUE_KEY)
-            }
-        }
-
-        failure {
-            script {
-                try {
-                    // ! pipeline을 실행하면서 에러가 나서 fail로 떨어지면 무조건 jira plan/run issue의 status를 fail로 처리
-                    transitionIssue(map.jira.base_url, map.jira.auth, transitionPayload(map.jira.fail_transition), JIRA_ISSUE_KEY)
-
-                    // ! try catch로 감싼 이유는 이미 status가 fail일 수 있기 때문에 이미 fail인 상태면 처리
-                } catch (RuntimeException) {
-                    println "젠장 오류가 났잖아"
-                }
-            }
-        }
-    }
-}
+    //------------------------ 여기까지 stages ------------------------   
 
 // * methods * //
 

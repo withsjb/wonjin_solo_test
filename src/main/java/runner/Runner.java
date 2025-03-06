@@ -2,10 +2,12 @@ package runner;
 
 import io.cucumber.junit.Cucumber;
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 // import com.github.mkolisnyk.cucumber.runner.ExtendedCucumber;
 // import com.github.mkolisnyk.cucumber.runner.ExtendedCucumberOptions;
 import io.cucumber.junit.CucumberOptions;
+import utils.CucumberRetryRule;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -31,30 +33,9 @@ import static utils.AndroidManager.copyJsonFile;
 
 )
 public class Runner {
-    static String dateOnly = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-    private static final String CUCUMBER_JSON = "/cucumber.json";
-    private static final String CUCUMBER_DAY_JSON = "/target_"+ dateOnly +"/cucumber_" + dateOnly + ".json"; // 날짜만 포함된 결과 파일
+    @Rule
+    public CucumberRetryRule retryRule = new CucumberRetryRule(3);
 
-    @AfterClass
-    public static void uploadReport(){
-        try{
-            File dayFolder = new File("target/target_" + dateOnly);
-            if (!dayFolder.exists()) {
-                dayFolder.mkdirs(); // 폴더가 없으면 생성
-                System.out.println("폴더가 없어서 생성되었습니다: " + dayFolder.getAbsolutePath());
-                File dayFile = new File(CUCUMBER_DAY_JSON);
 
-                if (dayFile.exists()) {
-                    // 날짜가 같은 파일이 존재하면 기존 파일 삭제 후 새로운 파일로 교체
-                    System.out.println("같은 날짜의 파일이 존재하여 덮어씁니다.");
-                    dayFile.delete(); // 기존 파일 삭제
-                }
-
-                copyJsonFile(CUCUMBER_JSON, CUCUMBER_DAY_JSON);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
 }
